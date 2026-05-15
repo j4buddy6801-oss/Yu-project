@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<title>貪吃蛇 - 升級版</title>
+<style>
+    @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+
+    body {
+        margin: 0;
+        height: 100vh;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        background: linear-gradient(135deg, #0f0f23, #1a1a2e);
+        font-family: 'Press Start 2P', Arial, sans-serif;
+        color: #0f0;
+        overflow: hidden;
+    }
+
+    .menu {
+        background: #16213e;
+        padding: 30px;
+        border-radius: 20px;
+        border: 6px solid #0f0;
+        box-shadow: 0 0 40px rgba(0, 255, 0, 0.4);
+        text-align: center;
+        width: 420px;
+    }
+
+    h1 { font-size: 32px; margin: 0 0 20px 0; text-shadow: 0 0 15px #0f0; }
+
+    .section { margin: 20px 0; }
+    .section h3 { margin: 10px 0; font-size: 16px; }
+
+    .color-options {
+        display: flex;
+        gap: 15px;
+        justify-content: center;
+        flex-wrap: wrap;
+    }
+    .color-btn {
+        width: 50px; height: 50px;
+        border-radius: 50%;
+        cursor: pointer;
+        border: 4px solid #fff;
+        box-shadow: 0 0 10px rgba(0,0,0,0.5);
+    }
+    .color-btn.selected { border-color: #ff0; transform: scale(1.15); }
+
+    .level-btn {
+        padding: 12px 20px;
+        margin: 5px;
+        background: #0f3460;
+        color: white;
+        border: 2px solid #0f0;
+        cursor: pointer;
+        font-family: inherit;
+    }
+    .level-btn:hover, .level-btn.selected { background: #0f0; color: #000; }
+
+    canvas {
+        border: 4px solid #0f0;
+        image-rendering: pixelated;
+        background: #0a0a1f;
+        border-radius: 8px;
+        display: none;
+    }
+
+    .info-bar {
+        display: flex; justify-content: space-between; margin-top: 15px; font-size: 16px; padding: 0 10px;
+    }
+
+    .game-over, .pause {
+        position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+        background: rgba(0,0,0,0.95); padding: 30px; border: 4px solid #f00;
+        border-radius: 15px; text-align: center; display: none;
+    }
+</style>
+</head>
+<body>
+
+<!-- 開始選單 -->
+<div class="menu" id="menu">
+    <h1>🐍 貪吃蛇</h1>
+    
+    <div class="section">
+        <h3>選擇關卡</h3>
+        <div id="levelSelect"></div>
+    </div>
+
+    <div class="section">
+        <h3>選擇蛇顏色</h3>
+        <div class="color-options" id="colorSelect"></div>
+    </div>
+
+    <button onclick="startGame()" style="margin-top:20px; padding:15px 40px; font-size:18px; background:#0f0; color:#000; border:none; cursor:pointer;">
+        開始遊戲
+    </button>
+</div>
+
+<canvas id="gameCanvas" width="640" height="480"></canvas>
+
+<div class="info-bar" id="infoBar" style="display:none; width:640px;">
+    <div>分數: <span id="score">000</span></div>
+    <div>關卡: <span id="level">01</span></div>
+    <div>最高分: <span id="highScore">000</span></div>
+</div>
+
+<div class="game-over" id="gameOver">
+    <h2 style="color:#f00;">GAME OVER</h2>
+    <p>最終得分: <span id="finalScore"></span></p>
+    <p>達到關卡: <span id="finalLevel"></span></p>
+    <button onclick="showMenu()" style="margin-top:15px;">返回主選單</button>
+</div>
+
+<script>
+// ==================== 變數 ====================
+const canvas = document.getElementById("gameCanvas");
+const ctx = canvas.getContext("2d");
+let snake, direction, nextDirection, food, obstacles, particles;
+let score, level, highScore = 0, gameRunning = false;
+let snakeColor = "#00ff44";
+let selectedStartLevel = 1;
+
+// 顏色選項
+const colors = ["#00ff44", "#00ccff", "#ff44aa", "#ffaa00", "#ffff00", "#aa44ff"];
+
+// 建立選單
+function createMenu() {
+    // 關卡按鈕
+    const levelDiv = document.getElementById("levelSelect");
+    for (let i = 1; i <= 8; i++) {
+        const btn = document.createElement("button");
+        btn.className = "level-btn";
+        btn.textContent = `關卡 ${i}`;
+        if (i === 1) btn.classList.add("selected");
+        btn.onclick = () => {
+            document.querySelectorAll('.level-btn').forEach(b => b.classList.remove('selected'));
+            btn.classList.add('selected');
+            selectedStartLevel = i;
+        };
+        levelDiv.appendChild(btn);
+    }
+
+    // 顏色按鈕
+    const colorDiv = document.getElementById("colorSelect");
+    colors.forEach(color => {
+        const btn = document.createElement("div");
+        btn.className = "color-btn";
+        btn.style.backgroundColor = color;
+        if (color === snakeColor) btn.classList.add("selected");
+        btn.onclick = () => {
+            document.querySelectorAll('.color-btn').forEach(b => b.classList.remove('selected'));
+            btn.classList.add("selected");
+            snakeColor = color;
+        };
+        colorDiv.appendChild(btn);
+    });
+}
+
+// 粒子效果
+function createParticles(x, y) {
+    particles = [];
+    for (let i = 0; i < 25; i++) {
+        particles.push({
+            x: x * 20 + 10,
+            y: y * 20 + 10,
+            vx: (Math.random() - 0.5) * 8,
+            vy: (Math.random() - 0.5) * 8,
+            life: 30
+        });
+    }
+}
+
+function updateParticles() {
+    if (!particles) return;
+    for (let i = particles.length - 1; i >= 0; i--) {
+        const p = particles[i];
+        p.x += p.vx;
+        p.y += p.vy;
+        p.life--;
+        p.vx *= 0.96;
+        p.vy *= 0.96;
+        if (p.life <= 0) particles.splice(i, 1);
+    }
+}
+
+// 初始化遊戲
+function initGame(startLevel = 1) {
+    snake = [{x: 12, y: 12}];
+    direction = {x: 1, y: 0};
+    nextDirection = {x: 1, y: 0};
+    score = 0;
+    level = startLevel;
+    obstacles = [];
+    particles = [];
+
+    document.getElementById("score").textContent = "000";
+    document.getElementById("level").textContent = String(level).padStart(2, '0');
+
+    spawnFood();
+    spawnObstacles();
+}
+
+// 生成食物
+function spawnFood() {
+    do {
+        food = { x: Math.floor(Math.random() * 32), y: Math.floor(Math.random() * 24) };
+    } while (snake.some(s => s.x === food.x && s.y === food.y) || obstacles.some(o => o.x === food.x && o.y === food.y));
+}
+
+// 生成障礙物
+function spawnObstacles() {
+    obstacles = [];
+    const count = Math.min(4 + level * 3, 28);
+    for (let i = 0; i < count; i++) {
+        let o;
+        do {
+            o = { x: Math.floor(Math.random() * 32), y: Math.floor(Math.random() * 24) };
+        } while (snake.some(s => s.x === o.x && s.y === o.y) || 
+                 (food && food.x === o.x && food.y === o.y) ||
+                 obstacles.some(obs => obs.x === o.x && obs.y === o.y));
+        obstacles.push(o);
+    }
+}
+
+// 升級關卡
+function levelUp() {
+    level++;
+    document.getElementById("level").textContent = String(level).padStart(2, '0');
+    spawnObstacles();
+}
+
+// 遊戲主迴圈
+function gameLoop() {
+    if (!gameRunning) return;
+    direction = nextDirection;
+
+    const head = {x: snake[0].x + direction.x, y: snake[0].y + direction.y};
+
+    if (head.x < 0 || head.x >= 32 || head.y < 0 || head.y >= 24 ||
+        snake.some(s => s.x === head.x && s.y === head.y) ||
+        obstacles.some(o => o.x === head.x && o.y === head.y)) {
+        gameOver();
+        return;
+    }
+
+    snake.unshift(head);
+
+    if (head.x === food.x && head.y === food.y) {
+        score += 10;
+        document.getElementById("score").textContent = String(score).padStart(3, '0');
+        createParticles(food.x, food.y);
+        
+        if (score % 50 === 0) levelUp();
+        spawnFood();
+    } else {
+        snake.pop();
+    }
+
+    draw();
+    updateParticles();
+}
+
+function draw() {
+    ctx.fillStyle = "#0a0a1f";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    const segmentSize = 20;
+
+    // 畫蛇（更像真蛇）
+    snake.forEach((seg, i) => {
+        if (i === 0) {
+            // 蛇頭
+            ctx.fillStyle = snakeColor;
+            ctx.fillRect(seg.x * segmentSize + 1, seg.y * segmentSize + 1, segmentSize - 2, segmentSize - 2);
+            
+            // 眼睛
+            ctx.fillStyle = "#000";
+            const eyeSize = 4;
+            if (direction.x === 1) { // 向右
+                ctx.fillRect(seg.x*20 + 12, seg.y*20 + 5, eyeSize, eyeSize);
+                ctx.fillRect(seg.x*20 + 12, seg.y*20 + 11, eyeSize, eyeSize);
+            } else if (direction.x === -1) { // 向左
+                ctx.fillRect(seg.x*20 + 4, seg.y*20 + 5, eyeSize, eyeSize);
+                ctx.fillRect(seg.x*20 + 4, seg.y*20 + 11, eyeSize, eyeSize);
+            } else if (direction.y === -1) { // 向上
+                ctx.fillRect(seg.x*20 + 5, seg.y*20 + 4, eyeSize, eyeSize);
+                ctx.fillRect(seg.x*20 + 11, seg.y*20 + 4, eyeSize, eyeSize);
+            } else { // 向下
+                ctx.fillRect(seg.x*20 + 5, seg.y*20 + 12, eyeSize, eyeSize);
+                ctx.fillRect(seg.x*20 + 11, seg.y*20 + 12, eyeSize, eyeSize);
+            }
+        } else {
+            // 蛇身（漸變）
+            const brightness = Math.max(80, 200 - i * 4);
+            ctx.fillStyle = snakeColor;
+            ctx.globalAlpha = 0.9 - i * 0.015;
+            ctx.fillRect(seg.x * segmentSize + 2, seg.y * segmentSize + 2, segmentSize - 4, segmentSize - 4);
+        }
+    });
+    ctx.globalAlpha = 1;
+
+    // 畫障礙物
+    ctx.fillStyle = "#ff8800";
+    obstacles.forEach(o => {
+        ctx.fillRect(o.x * 20 + 3, o.y * 20 + 3, 14, 14);
+    });
+
+    // 畫食物
+    ctx.fillStyle = "#ff0066";
+    ctx.beginPath();
+    ctx.arc(food.x * 20 + 10, food.y * 20 + 10, 9, 0, Math.PI * 2);
+    ctx.fill();
+
+    // 粒子
+    if (particles) {
+        ctx.fillStyle = "#ffff00";
+        particles.forEach(p => {
+            ctx.globalAlpha = p.life / 30;
+            ctx.fillRect(p.x - 2, p.y - 2, 5, 5);
+        });
+        ctx.globalAlpha = 1;
+    }
+}
+
+function gameOver() {
+    gameRunning = false;
+    clearInterval(gameInterval);
+    if (score > highScore) highScore = score;
+    document.getElementById("highScore").textContent = String(highScore).padStart(3, '0');
+    document.getElementById("finalScore").textContent = score;
+    document.getElementById("finalLevel").textContent = level;
+    document.getElementById("gameOver").style.display = "block";
+}
+
+let gameInterval;
+function startGame() {
+    document.getElementById("menu").style.display = "none";
+    canvas.style.display = "block";
+    document.getElementById("infoBar").style.display = "flex";
+    
+    initGame(selectedStartLevel);
+    gameRunning = true;
+    clearInterval(gameInterval);
+    gameInterval = setInterval(gameLoop, Math.max(180 - (selectedStartLevel-1)*15, 70));
+}
+
+// 返回主選單
+function showMenu() {
+    document.getElementById("gameOver").style.display = "none";
+    canvas.style.display = "none";
+    document.getElementById("infoBar").style.display = "none";
+    document.getElementById("menu").style.display = "block";
+}
+
+// 鍵盤控制
+document.addEventListener("keydown", e => {
+    if (!gameRunning) {
+        if (e.key.toLowerCase() === "r") startGame();
+        return;
+    }
+
+    switch (e.key) {
+        case "ArrowUp": case "w": case "W": if (direction.y !== 1) nextDirection = {x:0,y:-1}; break;
+        case "ArrowDown": case "s": case "S": if (direction.y !== -1) nextDirection = {x:0,y:1}; break;
+        case "ArrowLeft": case "a": case "A": if (direction.x !== 1) nextDirection = {x:-1,y:0}; break;
+        case "ArrowRight": case "d": case "D": if (direction.x !== -1) nextDirection = {x:1,y:0}; break;
+    }
+});
+
+// 初始化選單
+createMenu();
+
+</script>
+</body>
+</html>
