@@ -1,378 +1,625 @@
 <!DOCTYPE html>
-<html lang="zh-TW">
+<html lang="en">
 <head>
-<meta charset="UTF-8">
-<title>🐍 貪吃蛇 - 雙蛇對戰</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-<style>
-    @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
-    body {
-        margin: 0; padding: 0; height: 100vh; background: #0b0e2e;
-        font-family: 'Press Start 2P', Arial, sans-serif; color: #0f0;
-        display: flex; flex-direction: column; overflow: hidden;
-        touch-action: manipulation;
-    }
-    canvas {
-        display: block; margin: auto; border: 6px solid #0f0;
-        image-rendering: pixelated; background: #1a1f3d;
-        max-width: 100%; max-height: calc(100vh - 180px);
-        box-shadow: 0 0 30px #0f0;
-        touch-action: none;
-    }
-    .menu {
-        position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-        background: rgba(15, 20, 50, 0.95); padding: 25px; border: 5px solid #0f0;
-        border-radius: 15px; text-align: center; width: 90%; max-width: 380px;
-        box-shadow: 0 0 40px #0f0;
-    }
-    h1 { font-size: 28px; margin: 10px 0 20px; text-shadow: 0 0 15px #0f0; }
-    .info {
-        position: absolute; top: 10px; left: 10px; right: 10px;
-        display: flex; justify-content: space-between; font-size: 16px;
-        text-shadow: 2px 2px 0 #000; pointer-events: none;
-    }
-    .hint {
-        position: absolute; bottom: 15px; left: 50%; transform: translateX(-50%);
-        font-size: 14px; color: #0f0; opacity: 0.7; text-shadow: 0 0 10px #0f0;
-    }
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>2D Pro Free Throw Simulator - Enhanced</title>
+    <style>
+        body {
+            margin: 0;
+            background-color: #121212;
+            color: #fff;
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            overflow: hidden;
+            user-select: none;
+        }
+        #game-container {
+            position: relative;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.6);
+            border-radius: 12px;
+            overflow: hidden;
+            background: #222;
+        }
+        canvas {
+            background: #e0924f; /* Hardwood Court Tone */
+            display: block;
+        }
+        .ui-layer {
+            position: absolute;
+            top: 20px;
+            left: 25px;
+            right: 25px;
+            display: flex;
+            justify-content: space-between;
+            font-size: 26px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            text-shadow: 0 2px 8px rgba(0,0,0,0.9);
+            pointer-events: none;
+        }
+        .screen-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(10, 10, 10, 0.85);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 10;
+            backdrop-filter: blur(4px);
+        }
+        button {
+            padding: 14px 35px;
+            font-size: 20px;
+            font-weight: bold;
+            background: #ff5500;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(255, 85, 0, 0.4);
+            transition: all 0.2s ease;
+        }
+        button:hover {
+            background: #ff7733;
+            transform: scale(1.05);
+            box-shadow: 0 6px 18px rgba(255, 85, 0, 0.6);
+        }
+        .hidden { display: none !important; }
+        
+        #feedback {
+            position: absolute;
+            bottom: 130px;
+            width: 100%;
+            text-align: center;
+            font-size: 32px;
+            font-weight: 900;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            text-shadow: 0 3px 10px rgba(0,0,0,1);
+            pointer-events: none;
+            transition: all 0.1s ease;
+        }
+        .perfect { color: #00ffcc; transform: scale(1.1); }
+        .good { color: #ffcc00; }
+        .bad { color: #ff3333; }
+    </style>
 </head>
 <body>
-<canvas id="gameCanvas" width="640" height="480"></canvas>
-<div class="info" id="info">
-    <div>分數: <span id="score">000</span></div>
-    <div>關卡: <span id="level">01</span></div>
-</div>
 
-<!-- 選單 -->
-<div class="menu" id="menu">
-    <h1>🐍 貪吃蛇</h1>
-    <p>選擇你的蛇顏色</p>
-    <div class="color-options" id="colorSelect"></div>
-    <button onclick="startGame()" style="margin-top:20px; padding:15px 40px; font-size:18px; background:#0f0; color:#000; border:none;">
-        開始遊戲
-    </button>
-</div>
+<div id="game-container">
+    <div class="ui-layer">
+        <div>Score: <span id="score-val" style="color: #ffaa00;">0</span> <span id="streak-wrap" style="margin-left: 15px; font-size: 18px; color: #00ffcc; visibility: hidden;">Streak: x<span id="streak-val">0</span></span></div>
+        <div>Time: <span id="timer-val" style="color: #ff3333;">30</span>s</div>
+    </div>
+    
+    <div id="feedback" class="hidden"></div>
 
-<div class="hint" id="hint" style="display:none;">← 左右滑動控制方向 →</div>
+    <!-- Start Screen -->
+    <div id="start-screen" class="screen-overlay">
+        <h1 style="color: #ff5500; margin-bottom: 5px; font-size: 42px; letter-spacing: 2px;">FREE THROW SIMULATOR</h1>
+        <p style="margin-bottom: 30px; color: #aaa; font-size: 16px;">Hold & Release <b>[SPACEBAR]</b>. Target changes distance dynamically!</p>
+        <button onclick="startGame()">Initialize Game</button>
+    </div>
+
+    <!-- Game Over Screen -->
+    <div id="game-over-screen" class="screen-overlay hidden">
+        <h1 style="color: #ff3333; margin-bottom: 5px; font-size: 46px;">SESSION OVER</h1>
+        <p style="margin-bottom: 30px; font-size: 24px; color: #fff;">Final Score: <span id="final-score" style="color:#ffaa00; font-weight:bold;">0</span></p>
+        <button onclick="startGame()">Run Again</button>
+    </div>
+
+    <canvas id="gameCanvas" width="850" height="500"></canvas>
+</div>
 
 <script>
-// ==================== 遊戲設定 ====================
-const canvas = document.getElementById("gameCanvas");
-const ctx = canvas.getContext("2d");
-const GRID_SIZE = 20;
-const COLS = 32;
-const ROWS = 24;
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
 
-let playerSnake, aiSnake, direction, nextDirection, food, obstacles = [], particles = [];
-let score = 0, level = 1, gameRunning = false;
-let snakeColor = "#00ff44";
-let gameSpeed = 140;
-let gameInterval;
-let aiMoveCounter = 0;
+// Game Engine State Variables
+let score = 0;
+let streak = 0;
+let timeLeft = 30;
+let isPlaying = false;
+let timerInterval;
 
-// Swipe 變數
-let touchStartX = 0;
-let touchStartY = 0;
+let isCharging = false;
+let shotMeterVal = 0; 
+let meterSpeed = 2.4; 
+let ballState = 'idle'; // Options: 'idle', 'flying', 'returning'
+let currentReleaseQuality = 'bad';
+let hasScoredThisShot = false;
 
-// 音效
-const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+// Ghost Meter States for Visual Feedback
+let ghostMeterVal = -1;
+let ghostMeterAlpha = 0;
 
-function playEatSound() {
-    const oscillator = audioCtx.createOscillator();
-    const gain = audioCtx.createGain();
-    oscillator.connect(gain);
-    gain.connect(audioCtx.destination);
-    oscillator.type = 'sine';
-    oscillator.frequency.setValueAtTime(800, audioCtx.currentTime);
-    gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
-    oscillator.frequency.exponentialRampToValueAtTime(1200, audioCtx.currentTime + 0.1);
-    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.2);
-    oscillator.start();
-    oscillator.stop(audioCtx.currentTime + 0.2);
-}
+// Dynamic Net Animation State
+let netYOffset = 0;
 
-// 顏色選擇
-const colors = ["#00ff44", "#00ccff", "#ff44aa", "#ffaa00", "#ffff00", "#aa66ff"];
-function createColorPicker() {
-    const container = document.getElementById("colorSelect");
-    container.innerHTML = '';
-    colors.forEach(color => {
-        const div = document.createElement("div");
-        div.className = "color-btn";
-        div.style.backgroundColor = color;
-        if (color === snakeColor) div.classList.add("selected");
-        div.onclick = () => {
-            document.querySelectorAll('.color-btn').forEach(el => el.classList.remove("selected"));
-            div.classList.add("selected");
-            snakeColor = color;
-        };
-        container.appendChild(div);
-    });
-}
+// Audio Node Synthesis Engine
+let audioCtx = null;
 
-// 粒子特效
-function createEatEffect(x, y) {
-    for (let i = 0; i < 30; i++) {
-        particles.push({
-            x: x * GRID_SIZE + 10,
-            y: y * GRID_SIZE + 10,
-            vx: (Math.random() - 0.5) * 9,
-            vy: (Math.random() - 0.5) * 9,
-            life: 35
-        });
+function initAudio() {
+    if (!audioCtx) {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
     }
 }
 
-function updateParticles() {
-    for (let i = particles.length - 1; i >= 0; i--) {
-        let p = particles[i];
-        p.x += p.vx;
-        p.y += p.vy;
-        p.life--;
-        if (p.life <= 0) particles.splice(i, 1);
+function playSynthTone(freq, type, duration, gainStart) {
+    initAudio();
+    if (!audioCtx) return;
+    
+    let osc = audioCtx.createOscillator();
+    let gainNode = audioCtx.createGain();
+    
+    osc.type = type;
+    osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+    
+    gainNode.gain.setValueAtTime(gainStart, audioCtx.currentTime);
+    gainNode.gain.exponentialRampToValueAtTime(0.00001, audioCtx.currentTime + duration);
+    
+    osc.connect(gainNode);
+    gainNode.connect(audioCtx.destination);
+    
+    osc.start();
+    osc.stop(audioCtx.currentTime + duration);
+}
+
+function playSwishSound() {
+    playSynthTone(587.33, 'sine', 0.12, 0.25); // D5
+    setTimeout(() => playSynthTone(880.00, 'sine', 0.25, 0.25), 70); // A5
+}
+
+function playRimSound() {
+    playSynthTone(110, 'triangle', 0.18, 0.4);
+    playSynthTone(60, 'sine', 0.15, 0.5);
+}
+
+function playTickSound() {
+    playSynthTone(700, 'triangle', 0.02, 0.1);
+}
+
+// Environment Geometry Setup
+const courtFloorY = 420;
+const player = { x: 160, y: courtFloorY - 30, radius: 22 };
+const hoop = { 
+    x1: 670,         // Front rim boundary point
+    x2: 715,         // Back rim edge connection point
+    y: 220,          // Height plane of rim line
+    backboardX: 720,
+    backboardTop: 130,
+    backboardBottom: 250
+};
+
+const ball = { 
+    x: 0, y: 0, 
+    radius: 11, 
+    vx: 0, vy: 0, 
+    gravity: 0.42,
+    bounciness: 0.55,
+    angle: 0,        // Rotational structural visual angle
+    spinSpeed: 0     // Tracks execution spin rates
+};
+
+// Interactive Score Popups floating stack tracker
+let floatScores = [];
+
+function createFloatScore(text, x, y, color) {
+    floatScores.push({ text, x, y, color, alpha: 1.0, life: 50 });
+}
+
+// 2K Mechanical Tuning Maps
+const METER_ZONES = { perfectStart: 73, perfectEnd: 78, goodStart: 58, goodEnd: 88 };
+let feedbackTimeout;
+
+// Dynamic Input Engine Listeners
+window.addEventListener('keydown', (e) => {
+    if (e.code === 'Space' && isPlaying && ballState === 'idle' && !isCharging) {
+        initAudio(); 
+        isCharging = true;
+        shotMeterVal = 0;
+        playTickSound();
     }
-}
+});
 
-// 初始化
-function initGame() {
-    playerSnake = [{x: 8, y: 12}];
-    aiSnake = [{x: 24, y: 12}];
-    direction = nextDirection = {x: 1, y: 0};
-    score = 0; level = 1; gameSpeed = 140;
-    aiMoveCounter = 0;
-    obstacles = [];
-    document.getElementById("score").textContent = "000";
-    document.getElementById("level").textContent = "01";
-    spawnFood();
-    spawnObstacles();
-}
-
-function spawnFood() {
-    let newFood;
-    do {
-        newFood = { x: Math.floor(Math.random() * COLS), y: Math.floor(Math.random() * ROWS) };
-    } while (
-        playerSnake.some(s => s.x === newFood.x && s.y === newFood.y) ||
-        aiSnake.some(s => s.x === newFood.x && s.y === newFood.y) ||
-        obstacles.some(o => o.x === newFood.x && o.y === newFood.y)
-    );
-    food = newFood;
-}
-
-function spawnObstacles() {
-    obstacles = [];
-    const count = Math.min(6 + level * 2, 18);
-    for (let i = 0; i < count; i++) {
-        let obs;
-        do {
-            obs = {x: Math.floor(Math.random()*COLS), y: Math.floor(Math.random()*ROWS)};
-        } while (
-            playerSnake.some(s => s.x === obs.x && s.y === obs.y) ||
-            aiSnake.some(s => s.x === obs.x && s.y === obs.y)
-        );
-        obstacles.push(obs);
+window.addEventListener('keyup', (e) => {
+    if (e.code === 'Space' && isPlaying && isCharging) {
+        isCharging = false;
+        launchBallPhysics();
     }
-}
-
-function levelUp() {
-    level++;
-    document.getElementById("level").textContent = String(level).padStart(2, '0');
-    if (gameSpeed > 60) {
-        gameSpeed -= 12;
-        clearInterval(gameInterval);
-        gameInterval = setInterval(gameLoop, gameSpeed);
-    }
-    spawnObstacles();
-}
-
-// AI 移動
-function aiMove() {
-    const head = aiSnake[0];
-    let bestDir = {x: 0, y: 0};
-    let bestDist = Infinity;
-    const dirs = [{x:1,y:0}, {x:-1,y:0}, {x:0,y:1}, {x:0,y:-1}];
-
-    for (let dir of dirs) {
-        const next = {x: head.x + dir.x, y: head.y + dir.y};
-        if (next.x < 0 || next.x >= COLS || next.y < 0 || next.y >= ROWS) continue;
-        if (aiSnake.some(s => s.x === next.x && s.y === next.y)) continue;
-        if (obstacles.some(o => o.x === next.x && o.y === next.y)) continue;
-        if (playerSnake.some(s => s.x === next.x && s.y === next.y)) continue;
-
-        const dist = Math.abs(next.x - food.x) + Math.abs(next.y - food.y);
-        if (dist < bestDist) {
-            bestDist = dist;
-            bestDir = dir;
-        }
-    }
-    return bestDist === Infinity ? dirs[Math.floor(Math.random() * dirs.length)] : bestDir;
-}
-
-// 主遊戲迴圈
-function gameLoop() {
-    if (!gameRunning) return;
-
-    direction = nextDirection;
-    const pHead = {x: playerSnake[0].x + direction.x, y: playerSnake[0].y + direction.y};
-
-    if (pHead.x < 0 || pHead.x >= COLS || pHead.y < 0 || pHead.y >= ROWS ||
-        playerSnake.some(s => s.x === pHead.x && s.y === pHead.y) ||
-        obstacles.some(o => o.x === pHead.x && o.y === pHead.y) ||
-        aiSnake.some(s => s.x === pHead.x && s.y === pHead.y)) {
-        gameOver();
-        return;
-    }
-
-    playerSnake.unshift(pHead);
-
-    // AI 移動（較慢）
-    aiMoveCounter++;
-    let aiMoved = false;
-    let aiHead = null;
-    if (aiMoveCounter % 2 === 0) {
-        const aiDir = aiMove();
-        aiHead = {x: aiSnake[0].x + aiDir.x, y: aiSnake[0].y + aiDir.y};
-        if (aiHead.x >= 0 && aiHead.x < COLS && aiHead.y >= 0 && aiHead.y < ROWS &&
-            !aiSnake.some(s => s.x === aiHead.x && s.y === aiHead.y) &&
-            !obstacles.some(o => o.x === aiHead.x && o.y === aiHead.y) &&
-            !playerSnake.some(s => s.x === aiHead.x && s.y === aiHead.y)) {
-            aiSnake.unshift(aiHead);
-            aiMoved = true;
-        }
-    }
-
-    const playerAte = (pHead.x === food.x && pHead.y === food.y);
-    const aiAte = aiMoved && aiHead && (aiHead.x === food.x && aiHead.y === food.y);
-
-    if (playerAte) {
-        score += 10;
-        document.getElementById("score").textContent = String(score).padStart(3, '0');
-        createEatEffect(food.x, food.y);
-        playEatSound();
-        if (score % 40 === 0) levelUp();
-        spawnFood();
-    } else if (aiAte) {
-        createEatEffect(food.x, food.y);
-        playEatSound();
-        spawnFood();
-    }
-
-    if (!playerAte) playerSnake.pop();
-    if (!aiAte && aiSnake.length > 1) aiSnake.pop();
-
-    draw();
-    updateParticles();
-}
-
-function draw() {
-    ctx.fillStyle = "#1a1f3d";
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-    // 玩家蛇
-    playerSnake.forEach((seg, i) => {
-        ctx.fillStyle = snakeColor;
-        if (i === 0) {
-            ctx.fillRect(seg.x*GRID_SIZE + 1, seg.y*GRID_SIZE + 1, GRID_SIZE-2, GRID_SIZE-2);
-            ctx.fillStyle = "#000";
-            const ex = direction.x === 1 ? 12 : direction.x === -1 ? 4 : 6;
-            const ey = direction.y === 1 ? 12 : direction.y === -1 ? 4 : 6;
-            ctx.fillRect(seg.x*GRID_SIZE + ex, seg.y*GRID_SIZE + ey - 3, 4, 4);
-            ctx.fillRect(seg.x*GRID_SIZE + ex, seg.y*GRID_SIZE + ey + 3, 4, 4);
-        } else {
-            ctx.globalAlpha = Math.max(0.5, 1 - i*0.03);
-            ctx.fillRect(seg.x*GRID_SIZE + 3, seg.y*GRID_SIZE + 3, GRID_SIZE-6, GRID_SIZE-6);
-        }
-    });
-    ctx.globalAlpha = 1;
-
-    // AI 蛇
-    ctx.fillStyle = "#ff4444";
-    aiSnake.forEach((seg, i) => {
-        if (i === 0) {
-            ctx.fillRect(seg.x*GRID_SIZE + 1, seg.y*GRID_SIZE + 1, GRID_SIZE-2, GRID_SIZE-2);
-        } else {
-            ctx.globalAlpha = Math.max(0.5, 1 - i*0.03);
-            ctx.fillRect(seg.x*GRID_SIZE + 3, seg.y*GRID_SIZE + 3, GRID_SIZE-6, GRID_SIZE-6);
-        }
-    });
-    ctx.globalAlpha = 1;
-
-    // 障礙物
-    ctx.fillStyle = "#e74c3c";
-    obstacles.forEach(o => ctx.fillRect(o.x*GRID_SIZE + 4, o.y*GRID_SIZE + 4, GRID_SIZE-8, GRID_SIZE-8));
-
-    // 食物
-    ctx.fillStyle = "#f1c40f";
-    ctx.beginPath();
-    ctx.arc(food.x*GRID_SIZE + 10, food.y*GRID_SIZE + 10, 9, 0, Math.PI*2);
-    ctx.fill();
-
-    // 粒子
-    ctx.fillStyle = "#f1c40f";
-    particles.forEach(p => {
-        ctx.globalAlpha = p.life / 35;
-        ctx.fillRect(p.x - 3, p.y - 3, 7, 7);
-    });
-    ctx.globalAlpha = 1;
-}
-
-function gameOver() {
-    gameRunning = false;
-    clearInterval(gameInterval);
-    alert(`遊戲結束！\n\n最終分數: ${score}\n達到關卡: ${level}`);
-    document.getElementById("menu").style.display = "block";
-    document.getElementById("hint").style.display = "none";
-}
+});
 
 function startGame() {
-    document.getElementById("menu").style.display = "none";
-    document.getElementById("hint").style.display = "block";
-    initGame();
-    gameRunning = true;
-    gameInterval = setInterval(gameLoop, gameSpeed);
+    score = 0;
+    streak = 0;
+    timeLeft = 30;
+    isPlaying = true;
+    ballState = 'idle';
+    isCharging = false;
+    ghostMeterAlpha = 0;
+    netYOffset = 0;
+    floatScores = [];
+    
+    player.x = 160; // Reset to default initial line
+    
+    document.getElementById('score-val').innerText = score;
+    document.getElementById('streak-val').innerText = streak;
+    document.getElementById('streak-wrap').style.visibility = 'hidden';
+    document.getElementById('timer-val').innerText = timeLeft;
+    document.getElementById('start-screen').classList.add('hidden');
+    document.getElementById('game-over-screen').classList.add('hidden');
+    
+    resetBallToHand();
+
+    clearInterval(timerInterval);
+    timerInterval = setInterval(() => {
+        timeLeft--;
+        document.getElementById('timer-val').innerText = timeLeft;
+        if (timeLeft <= 0) endGame();
+    }, 1000);
 }
 
-// ==================== Swipe 手勢 ====================
-canvas.addEventListener("touchstart", e => {
-    if (!gameRunning) return;
-    touchStartX = e.changedTouches[0].screenX;
-    touchStartY = e.changedTouches[0].screenY;
-});
+function endGame() {
+    isPlaying = false;
+    clearInterval(timerInterval);
+    document.getElementById('final-score').innerText = score;
+    document.getElementById('game-over-screen').classList.remove('hidden');
+}
 
-canvas.addEventListener("touchend", e => {
-    if (!gameRunning) return;
-    const touchEndX = e.changedTouches[0].screenX;
-    const touchEndY = e.changedTouches[0].screenY;
-    const deltaX = touchEndX - touchStartX;
-    const deltaY = touchEndY - touchStartY;
+function resetBallToHand() {
+    ball.x = player.x + 15;
+    ball.y = player.y - 25;
+    ball.vx = 0;
+    ball.vy = 0;
+    ball.angle = 0;
+    ball.spinSpeed = 0;
+    hasScoredThisShot = false;
+    ballState = 'idle';
+}
 
-    // 防止太小的滑動
-    if (Math.abs(deltaX) < 30 && Math.abs(deltaY) < 30) return;
+function launchBallPhysics() {
+    ballState = 'flying';
+    
+    // Lock Ghost Meter parameters for visual retention systems
+    ghostMeterVal = shotMeterVal;
+    ghostMeterAlpha = 1.0;
 
-    if (Math.abs(deltaX) > Math.abs(deltaY)) {
-        // 水平滑動
-        if (deltaX > 0 && direction.x !== -1) nextDirection = {x: 1, y: 0};
-        else if (deltaX < 0 && direction.x !== 1) nextDirection = {x: -1, y: 0};
+    // Evaluate shot release timing window definitions
+    if (shotMeterVal >= METER_ZONES.perfectStart && shotMeterVal <= METER_ZONES.perfectEnd) {
+        currentReleaseQuality = 'perfect';
+    } else if (shotMeterVal >= METER_ZONES.goodStart && shotMeterVal <= METER_ZONES.goodEnd) {
+        currentReleaseQuality = 'good';
     } else {
-        // 垂直滑動
-        if (deltaY > 0 && direction.y !== -1) nextDirection = {x: 0, y: 1};
-        else if (deltaY < 0 && direction.y !== 1) nextDirection = {x: 0, y: -1};
+        currentReleaseQuality = 'bad';
     }
-});
 
-// 鍵盤支援（電腦使用）
-document.addEventListener("keydown", e => {
-    if (!gameRunning) return;
-    switch(e.key) {
-        case "ArrowUp": case "w": case "W": if (direction.y !== 1) nextDirection = {x:0, y:-1}; break;
-        case "ArrowDown": case "s": case "S": if (direction.y !== -1) nextDirection = {x:0, y:1}; break;
-        case "ArrowLeft": case "a": case "A": if (direction.x !== 1) nextDirection = {x:-1, y:0}; break;
-        case "ArrowRight": case "d": case "D": if (direction.x !== -1) nextDirection = {x:1, y:0}; break;
+    showBannerFeedback(currentReleaseQuality);
+
+    // Ball Vector Resolution via targeted kinematics formulas
+    let airTravelFrames = 52; 
+    let baseTargetX = (hoop.x1 + hoop.x2) / 2; 
+    
+    if (currentReleaseQuality === 'good') {
+        baseTargetX += (Math.random() - 0.5) * 14; 
+    } else if (currentReleaseQuality === 'bad') {
+        baseTargetX += shotMeterVal < METER_ZONES.goodStart ? -65 : 45;
     }
-});
 
-createColorPicker();
+    // Kinematic translation calculations
+    ball.vx = (baseTargetX - ball.x) / airTravelFrames;
+    ball.vy = ((hoop.y - ball.y) - (0.5 * ball.gravity * airTravelFrames * airTravelFrames)) / airTravelFrames;
+    
+    // Set dynamic visual spin speed based on forward velocity metrics
+    ball.spinSpeed = ball.vx * 0.05;
+}
+
+function showBannerFeedback(quality) {
+    const el = document.getElementById('feedback');
+    el.className = quality;
+    
+    if (quality === 'perfect') {
+        el.innerText = "Excellent Release!";
+    } else if (quality === 'good') {
+        el.innerText = "Good Timing";
+    } else {
+        el.innerText = shotMeterVal < METER_ZONES.goodStart ? "Slightly Early / Airball" : "Late Release / Brick";
+    }
+    
+    el.classList.remove('hidden');
+    clearTimeout(feedbackTimeout);
+    feedbackTimeout = setTimeout(() => el.classList.add('hidden'), 1200);
+}
+
+// Processing Updates Engine Logic Loop with Delta Time parameters
+function update(dt) {
+    // Decay visual ghost configuration structures
+    if (ghostMeterAlpha > 0) {
+        ghostMeterAlpha -= 0.02 * dt;
+    }
+
+    // Dynamic recovery algorithm processing for the hoop net meshes
+    if (netYOffset > 0) {
+        netYOffset -= 0.6 * dt;
+        if (netYOffset < 0) netYOffset = 0;
+    }
+
+    if (isCharging) {
+        shotMeterVal += meterSpeed * dt;
+        if (shotMeterVal > 100) {
+            shotMeterVal = 100;
+            isCharging = false;
+            launchBallPhysics();
+        }
+    }
+
+    if (ballState === 'flying') {
+        // Frame independent vector updates
+        ball.x += ball.vx * dt;
+        ball.y += ball.vy * dt;
+        ball.vy += ball.gravity * dt;
+        ball.angle += ball.spinSpeed * dt;
+
+        // --- REAL PHYSICS COLLISION ENGINE ---
+        
+        // 1. Backboard Surface Boundary Intersection Check
+        if (ball.x + ball.radius >= hoop.backboardX && ball.x - ball.radius <= hoop.backboardX + 12) {
+            if (ball.y >= hoop.backboardTop && ball.y <= hoop.backboardBottom) {
+                ball.vx = -Math.abs(ball.vx) * ball.bounciness;
+                ball.x = hoop.backboardX - ball.radius;
+                ball.spinSpeed = -ball.spinSpeed * 0.5; // Reverse visual spin on contact
+                playRimSound();
+            }
+        }
+
+        // 2. Front Rim Node Intersection
+        let dxFront = ball.x - hoop.x1;
+        let dyFront = ball.y - hoop.y;
+        let distFront = Math.hypot(dxFront, dyFront);
+        if (distFront < ball.radius + 4) {
+            playRimSound();
+            let nx = dxFront / distFront;
+            let ny = dyFront / distFront;
+            let dotProduct = ball.vx * nx + ball.vy * ny;
+            ball.vx = (ball.vx - 2 * dotProduct * nx) * ball.bounciness;
+            ball.vy = (ball.vy - 2 * dotProduct * ny) * ball.bounciness;
+            ball.x = hoop.x1 + nx * (ball.radius + 5);
+            ball.y = hoop.y + ny * (ball.radius + 5);
+            ball.spinSpeed = (ball.vy - ball.vx) * 0.03; // Randomize rotation vectors dynamically
+        }
+
+        // 3. Back Rim Node Intersection Point Collider
+        let dxBack = ball.x - hoop.x2;
+        let dyBack = ball.y - hoop.y;
+        let distBack = Math.hypot(dxBack, dyBack);
+        if (distBack < ball.radius + 4) {
+            playRimSound();
+            let nx = dxBack / distBack;
+            let ny = dyBack / distBack;
+            let dotProduct = ball.vx * nx + ball.vy * ny;
+            ball.vx = (ball.vx - 2 * dotProduct * nx) * ball.bounciness;
+            ball.vy = (ball.vy - 2 * dotProduct * ny) * ball.bounciness;
+            ball.x = hoop.x2 + nx * (ball.radius + 5);
+            ball.y = hoop.y + ny * (ball.radius + 5);
+            ball.spinSpeed = (ball.vy - ball.vx) * 0.03;
+        }
+
+        // 4. Scoring Logic Check
+        if (!hasScoredThisShot && ball.vy > 0 && ball.y >= hoop.y && ball.y <= hoop.y + 15) {
+            if (ball.x > hoop.x1 && ball.x < hoop.x2) {
+                hasScoredThisShot = true;
+                netYOffset = 14; // Trigger mesh simulation displacement parameters
+                playSwishSound();
+                
+                streak++;
+                document.getElementById('streak-val').innerText = streak;
+                if (streak >= 2) {
+                    document.getElementById('streak-wrap').style.visibility = 'visible';
+                }
+
+                let streakBonus = Math.floor(streak / 3); // Accumulate baseline tier multiplier points
+                let pointsEarned = 2;
+                let textOut = `+2 Points`;
+                let fillCol = "#ffcc00";
+
+                if (currentReleaseQuality === 'perfect') {
+                    pointsEarned = 3;
+                    textOut = "+3 Green Release!";
+                    fillCol = "#00ffcc";
+                }
+
+                if (streakBonus > 0) {
+                    pointsEarned += streakBonus;
+                    textOut += ` (Streak +${streakBonus})`;
+                }
+
+                score += pointsEarned;
+                document.getElementById('score-val').innerText = score;
+                createFloatScore(textOut, (hoop.x1 + hoop.x2)/2, hoop.y - 20, fillCol);
+            }
+        }
+
+        // Automatically clean up out-of-bounds positioning instances
+        if (ball.y > canvas.height + 40 || ball.x > canvas.width + 40 || ball.x < -40) {
+            if (!hasScoredThisShot) {
+                // Wipe streak states clean instantly upon miss event execution
+                streak = 0;
+                document.getElementById('streak-val').innerText = streak;
+                document.getElementById('streak-wrap').style.visibility = 'hidden';
+            }
+            
+            ballState = 'returning';
+            
+            // Re-allocate player position coordinates randomly to modify floor spatial layout depth
+            setTimeout(() => {
+                player.x = 90 + Math.random() * 260; // Safely reposition down the lane
+                resetBallToHand();
+            }, 400);
+        }
+    }
+
+    // Process active score popup array lifecycle
+    for (let i = floatScores.length - 1; i >= 0; i--) {
+        floatScores[i].y -= 0.8 * dt;
+        floatScores[i].life -= dt;
+        floatScores[i].alpha = floatScores[i].life / 50;
+        if (floatScores[i].life <= 0) floatScores.splice(i, 1);
+    }
+}
+
+// Rendering Execution Core Canvas Draw Engine
+function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    // --- DRAW BASKETBALL COURT ---
+    ctx.fillStyle = '#cc7a3a'; 
+    ctx.fillRect(0, courtFloorY, canvas.width, canvas.height - courtFloorY);
+    ctx.fillStyle = '#a65b24'; 
+    ctx.fillRect(0, courtFloorY, canvas.width, 10);
+
+    // Painted Key Area
+    ctx.strokeStyle = 'rgba(255,255,255,0.35)';
+    ctx.lineWidth = 4;
+    ctx.strokeRect(520, courtFloorY, 330, canvas.height - courtFloorY);
+
+    // Structural Backboard Systems Support Framing
+    ctx.fillStyle = '#262626';
+    ctx.fillRect(735, hoop.backboardTop + 40, 16, courtFloorY - hoop.backboardTop - 40); 
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(hoop.backboardX, hoop.backboardTop, 12, hoop.backboardBottom - hoop.backboardTop); 
+    ctx.strokeStyle = '#e64a19';
+    ctx.lineWidth = 3;
+    ctx.strokeRect(hoop.backboardX, hoop.backboardTop, 12, hoop.backboardBottom - hoop.backboardTop);
+
+    // Semi-Transparent Net Mesh Layout Lines (Animated via displacement mapping variables)
+    ctx.strokeStyle = 'rgba(240, 240, 240, 0.75)';
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    ctx.moveTo(hoop.x1, hoop.y);
+    ctx.lineTo(hoop.x1 + 4, hoop.y + 22 + netYOffset);
+    ctx.lineTo(hoop.x2 - 4, hoop.y + 22 + netYOffset);
+    ctx.lineTo(hoop.x2, hoop.y);
+    ctx.stroke();
+
+    // Rim Lines & Nets Overlay
+    ctx.strokeStyle = '#ff4500';
+    ctx.lineWidth = 5;
+    ctx.beginPath();
+    ctx.moveTo(hoop.x1, hoop.y);
+    ctx.lineTo(hoop.x2, hoop.y);
+    ctx.stroke();
+
+    // --- DRAW PLAYER PROXY ---
+    ctx.fillStyle = '#2a6fdb';
+    ctx.beginPath();
+    ctx.arc(player.x, player.y, player.radius, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 13px sans-serif';
+    ctx.fillText("88", player.x - 7, player.y + 5);
+
+    // --- DRAW BASKETBALL WITH VISUAL SPIN SEAMS ---
+    ctx.save();
+    ctx.translate(ball.x, ball.y);
+    ctx.rotate(ball.angle);
+    
+    // Core structural background circle
+    ctx.fillStyle = '#e65c00';
+    ctx.beginPath();
+    ctx.arc(0, 0, ball.radius, 0, Math.PI * 2);
+    ctx.fill();
+    
+    // Structural seam rendering lines
+    ctx.strokeStyle = '#222';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    // Horizontal cross seam lines
+    ctx.moveTo(-ball.radius, 0);
+    ctx.lineTo(ball.radius, 0);
+    // Vertical cross seam lines
+    ctx.moveTo(0, -ball.radius);
+    ctx.lineTo(0, ball.radius);
+    // Dynamic inner seam curve visuals
+    ctx.arc(-ball.radius*0.4, 0, ball.radius * 0.7, -Math.PI/2, Math.PI/2);
+    ctx.stroke();
+    ctx.restore();
+
+    // --- POPUP LAYER SCORES RENDERING ---
+    floatScores.forEach(s => {
+        ctx.fillStyle = s.color;
+        ctx.font = 'bold 18px sans-serif';
+        ctx.globalAlpha = s.alpha;
+        ctx.fillText(s.text, s.x - 40, s.y);
+        ctx.globalAlpha = 1.0; 
+    });
+
+    // --- DRAW 2K SHOT METER MODULE ---
+    if (isCharging || ghostMeterAlpha > 0) {
+        const mX = player.x - 25;
+        const mY = player.y - 75;
+        const mW = 50;
+        const mH = 9;
+
+        ctx.save();
+        // Fade meter out gracefully if drawing its ghost tracking trace
+        if (!isCharging && ghostMeterAlpha > 0) {
+            ctx.globalAlpha = ghostMeterAlpha;
+        }
+
+        // Background Wrapper Shield
+        ctx.fillStyle = 'rgba(0,0,0,0.7)';
+        ctx.fillRect(mX - 3, mY - 3, mW + 6, mH + 6);
+
+        // Good Frame Windows Color Mapping
+        ctx.fillStyle = '#cc9900';
+        let gS = (METER_ZONES.goodStart / 100) * mW;
+        let gW = ((METER_ZONES.goodEnd - METER_ZONES.goodStart) / 100) * mW;
+        ctx.fillRect(mX + gS, mY, gW, mH);
+
+        // Target Precision Green Point Range Box
+        ctx.fillStyle = '#00ffcc';
+        let pS = (METER_ZONES.perfectStart / 100) * mW;
+        let pW = ((METER_ZONES.perfectEnd - METER_ZONES.perfectStart) / 100) * mW;
+        ctx.fillRect(mX + pS, mY, pW, mH);
+
+        // Active/Ghost Moving Indicator Slider Line
+        let displayVal = isCharging ? shotMeterVal : ghostMeterVal;
+        let trackingPositionX = (displayVal / 100) * mW;
+        ctx.fillStyle = isCharging ? '#ffffff' : '#ffea00'; // Make ghost marker a golden/yellow hue
+        ctx.fillRect(mX + trackingPositionX - 1, mY - 3, 3, mH + 6);
+        
+        ctx.restore();
+    }
+}
+
+// Global Core Main Frame Loop Engine with Delta Time calculations
+let lastTime = 0;
+function gameLoop(timestamp) {
+    if (!lastTime) lastTime = timestamp;
+    // Standardize delta updates against a uniform target rate of 60Hz (16.66ms per frame)
+    let dt = (timestamp - lastTime) / 16.66;
+    lastTime = timestamp;
+
+    // Cap structural maximum jumps to prevent breaking collision paths on tab background idling
+    if (dt > 4) dt = 4;
+
+    update(dt);
+    draw();
+    requestAnimationFrame(gameLoop);
+}
+
+// Execute Processing Immediately
+requestAnimationFrame(gameLoop);
 </script>
+
 </body>
 </html>
