@@ -2,14 +2,15 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>2D Pro Free Throw Simulator - Enhanced</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Pro Hoops: Premium Arena Edition</title>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,800;1,900&display=swap" rel="stylesheet">
     <style>
         body {
             margin: 0;
-            background-color: #121212;
+            background-color: #060608;
             color: #fff;
-            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            font-family: 'Montserrat', sans-serif;
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -17,607 +18,787 @@
             min-height: 100vh;
             overflow: hidden;
             user-select: none;
+            touch-action: none;
         }
         #game-container {
             position: relative;
-            box-shadow: 0 15px 35px rgba(0,0,0,0.6);
-            border-radius: 12px;
+            box-shadow: 0 25px 70px rgba(0,0,0,0.95), 0 0 30px rgba(255, 115, 0, 0.15);
+            border-radius: 16px;
             overflow: hidden;
-            background: #222;
+            background: #09090d;
+            max-width: 100vw;
+            touch-action: none;
         }
         canvas {
-            background: #e0924f; /* Hardwood Court Tone */
             display: block;
+            max-width: 100%;
+            height: auto;
         }
+        
+        /* Premium Broadcast HUD Layout */
         .ui-layer {
             position: absolute;
             top: 20px;
-            left: 25px;
-            right: 25px;
+            left: 20px;
+            right: 20px;
             display: flex;
             justify-content: space-between;
-            font-size: 26px;
-            font-weight: 800;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            text-shadow: 0 2px 8px rgba(0,0,0,0.9);
             pointer-events: none;
         }
+        .score-bug {
+            background: linear-gradient(135deg, rgba(16, 16, 24, 0.95) 0%, rgba(26, 26, 36, 0.9) 100%);
+            border-left: 6px solid #ff6a00;
+            padding: 10px 24px;
+            border-radius: 6px;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.6);
+        }
+        .score-label { font-size: 11px; color: #aaa; text-transform: uppercase; letter-spacing: 1.5px; font-weight: 800; }
+        .score-number { font-size: 30px; color: #fff; text-shadow: 0 3px 6px rgba(0,0,0,0.4); font-weight: 900; }
+        .streak-text { font-size: 12px; color: #00ffcc; margin-top: -2px; text-shadow: 0 0 10px rgba(0,255,204,0.5); font-weight: 900; }
+        
+        .timer-bug {
+            background: linear-gradient(135deg, rgba(16, 16, 24, 0.95) 0%, rgba(26, 26, 36, 0.9) 100%);
+            border-right: 6px solid #ff3b30;
+            padding: 10px 24px;
+            border-radius: 6px;
+            text-align: right;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.6);
+        }
+
+        #contest-indicator {
+            position: absolute;
+            top: 25px;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 6px 16px;
+            border-radius: 30px;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            font-weight: 900;
+            background: rgba(0,0,0,0.6);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            pointer-events: none;
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        
         .screen-overlay {
             position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(10, 10, 10, 0.85);
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(8, 8, 12, 0.96);
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
             z-index: 10;
-            backdrop-filter: blur(4px);
+            backdrop-filter: blur(12px);
+            text-align: center;
+            padding: 25px;
+            box-sizing: border-box;
         }
+        
         button {
-            padding: 14px 35px;
+            padding: 18px 50px;
             font-size: 20px;
-            font-weight: bold;
-            background: #ff5500;
+            font-family: 'Montserrat', sans-serif;
+            font-weight: 900;
+            background: linear-gradient(135deg, #ff6a00, #ff2300);
             color: white;
             border: none;
-            border-radius: 6px;
+            border-radius: 50px;
             cursor: pointer;
-            box-shadow: 0 4px 12px rgba(255, 85, 0, 0.4);
-            transition: all 0.2s ease;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            box-shadow: 0 10px 30px rgba(255, 106, 0, 0.35);
+            transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
         button:hover {
-            background: #ff7733;
-            transform: scale(1.05);
-            box-shadow: 0 6px 18px rgba(255, 85, 0, 0.6);
+            transform: translateY(-4px) scale(1.03);
+            box-shadow: 0 14px 40px rgba(255, 106, 0, 0.5);
         }
-        .hidden { display: none !important; }
         
         #feedback {
             position: absolute;
-            bottom: 130px;
+            bottom: 125px;
             width: 100%;
             text-align: center;
-            font-size: 32px;
-            font-weight: 900;
+            font-size: 36px;
             text-transform: uppercase;
-            letter-spacing: 2px;
-            text-shadow: 0 3px 10px rgba(0,0,0,1);
+            letter-spacing: 5px;
+            text-shadow: 0 4px 20px rgba(0,0,0,1);
             pointer-events: none;
-            transition: all 0.1s ease;
+            transition: all 0.11s cubic-bezier(0.175, 0.885, 0.32, 1.2);
+            font-style: italic;
         }
-        .perfect { color: #00ffcc; transform: scale(1.1); }
-        .good { color: #ffcc00; }
-        .bad { color: #ff3333; }
+        .perfect { color: #00ffcc; transform: scale(1.15); text-shadow: 0 0 25px rgba(0,255,204,0.7), 0 4px 15px rgba(0,0,0,1); }
+        .good { color: #ffea00; }
+        .bad { color: #ff3b30; }
+        .hidden { display: none !important; }
     </style>
 </head>
 <body>
 
 <div id="game-container">
     <div class="ui-layer">
-        <div>Score: <span id="score-val" style="color: #ffaa00;">0</span> <span id="streak-wrap" style="margin-left: 15px; font-size: 18px; color: #00ffcc; visibility: hidden;">Streak: x<span id="streak-val">0</span></span></div>
-        <div>Time: <span id="timer-val" style="color: #ff3333;">30</span>s</div>
+        <div class="score-bug">
+            <div class="score-label">Points</div>
+            <div class="score-number" id="score-val">0</div>
+            <div class="streak-text hidden" id="streak-wrap">ON FIRE x<span id="streak-val">0</span></div>
+        </div>
+        <div id="contest-indicator" style="color: #00ffcc;">OPEN SHOT</div>
+        <div class="timer-bug">
+            <div class="score-label">Shot Clock</div>
+            <div class="score-number" style="color: #ff3b30;" id="timer-val">30.0</div>
+        </div>
     </div>
     
     <div id="feedback" class="hidden"></div>
 
-    <!-- Start Screen -->
     <div id="start-screen" class="screen-overlay">
-        <h1 style="color: #ff5500; margin-bottom: 5px; font-size: 42px; letter-spacing: 2px;">FREE THROW SIMULATOR</h1>
-        <p style="margin-bottom: 30px; color: #aaa; font-size: 16px;">Hold & Release <b>[SPACEBAR]</b>. Target changes distance dynamically!</p>
-        <button onclick="startGame()">Initialize Game</button>
+        <h1 style="color: #fff; margin: 0; font-size: 46px; letter-spacing: 2px; text-shadow: 0 0 40px rgba(255,106,0,0.45);">PRO HOOPS</h1>
+        <h2 style="color: #ff6a00; margin-top: 5px; margin-bottom: 35px; font-size: 20px; letter-spacing: 8px;">ARENA SIMULATOR</h2>
+        <p style="margin-bottom: 35px; color: #bbb; font-size: 15px; font-family: sans-serif; line-height: 1.6; max-width: 440px;">
+            Tap & Hold anywhere on screen (or press Spacebar) to lock timing. Let go to shoot.
+            <br><br>
+            <span style="color: #ff3b30; font-weight: bold;">CRITICAL UPDATE:</span> Releasing **too early** (below 52) or **too late** (above 83) will completely wreck your trajectory. Find the green center sweet spot!
+        </p>
+        <button onclick="startGame(event)">Take the Floor</button>
     </div>
 
-    <!-- Game Over Screen -->
     <div id="game-over-screen" class="screen-overlay hidden">
-        <h1 style="color: #ff3333; margin-bottom: 5px; font-size: 46px;">SESSION OVER</h1>
-        <p style="margin-bottom: 30px; font-size: 24px; color: #fff;">Final Score: <span id="final-score" style="color:#ffaa00; font-weight:bold;">0</span></p>
-        <button onclick="startGame()">Run Again</button>
+        <h1 style="color: #ff3b30; margin-bottom: 0; font-size: 52px; letter-spacing: 1px;">FINAL BUZZER</h1>
+        <p style="margin-top: 10px; margin-bottom: 40px; font-size: 26px; color: #ddd;">Total Score: <span id="final-score" style="color:#ff6a00; font-weight:900;">0</span></p>
+        <button onclick="startGame(event)">Run It Back</button>
     </div>
 
-    <canvas id="gameCanvas" width="850" height="500"></canvas>
+    <canvas id="gameCanvas" width="900" height="550"></canvas>
 </div>
 
 <script>
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
+const container = document.getElementById('game-container');
 
-// Game Engine State Variables
+// Game Core States
 let score = 0;
 let streak = 0;
-let timeLeft = 30;
+let timeLeft = 30.0;
 let isPlaying = false;
-let timerInterval;
 
+// Shot Metrics Calibration
 let isCharging = false;
 let shotMeterVal = 0; 
-let meterSpeed = 2.4; 
-let ballState = 'idle'; // Options: 'idle', 'flying', 'returning'
+let baseMeterSpeed = 2.4; 
+let currentMeterSpeed = 2.4;
+let ballState = 'idle'; 
 let currentReleaseQuality = 'bad';
 let hasScoredThisShot = false;
+let defenseContestLevel = 'Open'; 
 
-// Ghost Meter States for Visual Feedback
+// Visual FX Pools
 let ghostMeterVal = -1;
 let ghostMeterAlpha = 0;
-
-// Dynamic Net Animation State
 let netYOffset = 0;
+let cameraShake = 0;
+let screenFlashAlpha = 0;
+let screenFlashColor = 'rgba(0, 255, 204,'; // Dynamic tone swapper for green vs red hits
+let particleTrail = [];
+let rimBurstRadius = 0; 
+let pulseAnimationTimer = 0; 
 
-// Audio Node Synthesis Engine
-let audioCtx = null;
-
-function initAudio() {
-    if (!audioCtx) {
-        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    }
-}
-
-function playSynthTone(freq, type, duration, gainStart) {
-    initAudio();
-    if (!audioCtx) return;
-    
-    let osc = audioCtx.createOscillator();
-    let gainNode = audioCtx.createGain();
-    
-    osc.type = type;
-    osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
-    
-    gainNode.gain.setValueAtTime(gainStart, audioCtx.currentTime);
-    gainNode.gain.exponentialRampToValueAtTime(0.00001, audioCtx.currentTime + duration);
-    
-    osc.connect(gainNode);
-    gainNode.connect(audioCtx.destination);
-    
-    osc.start();
-    osc.stop(audioCtx.currentTime + duration);
-}
-
-function playSwishSound() {
-    playSynthTone(587.33, 'sine', 0.12, 0.25); // D5
-    setTimeout(() => playSynthTone(880.00, 'sine', 0.25, 0.25), 70); // A5
-}
-
-function playRimSound() {
-    playSynthTone(110, 'triangle', 0.18, 0.4);
-    playSynthTone(60, 'sine', 0.15, 0.5);
-}
-
-function playTickSound() {
-    playSynthTone(700, 'triangle', 0.02, 0.1);
-}
-
-// Environment Geometry Setup
-const courtFloorY = 420;
-const player = { x: 160, y: courtFloorY - 30, radius: 22 };
+// Court Coordinates Map
+const courtFloorY = 465;
 const hoop = { 
-    x1: 670,         // Front rim boundary point
-    x2: 715,         // Back rim edge connection point
-    y: 220,          // Height plane of rim line
-    backboardX: 720,
-    backboardTop: 130,
-    backboardBottom: 250
+    x1: 725, x2: 770, y: 245, 
+    backboardX: 775, backboardTop: 145, backboardBottom: 275
+};
+
+const player = { 
+    x: 180, 
+    y: courtFloorY,
+    armAngle: Math.PI / 2, 
+    followThroughTimer: 0
 };
 
 const ball = { 
-    x: 0, y: 0, 
-    radius: 11, 
-    vx: 0, vy: 0, 
-    gravity: 0.42,
-    bounciness: 0.55,
-    angle: 0,        // Rotational structural visual angle
-    spinSpeed: 0     // Tracks execution spin rates
+    x: 0, y: 0, radius: 12, vx: 0, vy: 0, 
+    gravity: 0.46, bounciness: 0.54, angle: 0, spinSpeed: 0 
 };
 
-// Interactive Score Popups floating stack tracker
-let floatScores = [];
-
-function createFloatScore(text, x, y, color) {
-    floatScores.push({ text, x, y, color, alpha: 1.0, life: 50 });
-}
-
-// 2K Mechanical Tuning Maps
-const METER_ZONES = { perfectStart: 73, perfectEnd: 78, goodStart: 58, goodEnd: 88 };
+// Tightened Operational Windows
+const METER_ZONES = { 
+    perfectStart: 71, 
+    perfectEnd: 79,  
+    goodStart: 60, 
+    goodEnd: 83      
+};
 let feedbackTimeout;
 
-// Dynamic Input Engine Listeners
+// Audio Node Builders
+let audioCtx = null;
+function initAudio() { if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)(); }
+
+function playSynthTone(freq, type, duration, gainStart) {
+    if (!audioCtx) return;
+    let osc = audioCtx.createOscillator();
+    let gainNode = audioCtx.createGain();
+    osc.type = type;
+    osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+    gainNode.gain.setValueAtTime(gainStart, audioCtx.currentTime);
+    gainNode.gain.exponentialRampToValueAtTime(0.00001, audioCtx.currentTime + duration);
+    osc.connect(gainNode);
+    gainNode.connect(audioCtx.destination);
+    osc.start(); osc.stop(audioCtx.currentTime + duration);
+}
+
+function playSwishSound() {
+    playSynthTone(620.00, 'sine', 0.14, 0.25);
+    setTimeout(() => playSynthTone(930.00, 'sine', 0.28, 0.25), 50);
+}
+function playRimSound(hard = false) {
+    playSynthTone(120, 'triangle', 0.16, hard ? 0.55 : 0.25);
+    playSynthTone(65, 'square', 0.12, hard ? 0.35 : 0.15);
+    if(hard) cameraShake = 10;
+}
+function playTickSound() { playSynthTone(850, 'sine', 0.02, 0.08); }
+
+// Control Configurations
+container.addEventListener('pointerdown', (e) => {
+    if (e.target.tagName === 'BUTTON') return;
+    e.preventDefault();
+    triggerChargeStart();
+});
+window.addEventListener('pointerup', () => { triggerChargeRelease(); });
+
 window.addEventListener('keydown', (e) => {
-    if (e.code === 'Space' && isPlaying && ballState === 'idle' && !isCharging) {
+    if (e.code === 'Space') { e.preventDefault(); triggerChargeStart(); }
+});
+window.addEventListener('keyup', (e) => {
+    if (e.code === 'Space') { triggerChargeRelease(); }
+});
+
+function triggerChargeStart() {
+    if (isPlaying && ballState === 'idle' && !isCharging) {
         initAudio(); 
         isCharging = true;
         shotMeterVal = 0;
+        player.followThroughTimer = 0;
         playTickSound();
     }
-});
+}
 
-window.addEventListener('keyup', (e) => {
-    if (e.code === 'Space' && isPlaying && isCharging) {
+function triggerChargeRelease() {
+    if (isPlaying && isCharging) {
         isCharging = false;
         launchBallPhysics();
     }
-});
+}
 
-function startGame() {
-    score = 0;
-    streak = 0;
-    timeLeft = 30;
-    isPlaying = true;
-    ballState = 'idle';
-    isCharging = false;
-    ghostMeterAlpha = 0;
-    netYOffset = 0;
-    floatScores = [];
-    
-    player.x = 160; // Reset to default initial line
+function startGame(e) {
+    if (e) e.stopPropagation();
+    score = 0; streak = 0; timeLeft = 30.0;
+    isPlaying = true; ballState = 'idle'; isCharging = false;
+    ghostMeterAlpha = 0; netYOffset = 0; cameraShake = 0; particleTrail = []; rimBurstRadius = 0;
+    player.x = 225;
     
     document.getElementById('score-val').innerText = score;
     document.getElementById('streak-val').innerText = streak;
-    document.getElementById('streak-wrap').style.visibility = 'hidden';
-    document.getElementById('timer-val').innerText = timeLeft;
+    document.getElementById('streak-wrap').classList.add('hidden');
     document.getElementById('start-screen').classList.add('hidden');
     document.getElementById('game-over-screen').classList.add('hidden');
     
     resetBallToHand();
-
-    clearInterval(timerInterval);
-    timerInterval = setInterval(() => {
-        timeLeft--;
-        document.getElementById('timer-val').innerText = timeLeft;
-        if (timeLeft <= 0) endGame();
-    }, 1000);
 }
 
 function endGame() {
     isPlaying = false;
-    clearInterval(timerInterval);
+    isCharging = false;
     document.getElementById('final-score').innerText = score;
     document.getElementById('game-over-screen').classList.remove('hidden');
 }
 
+function getHandPosition() {
+    const shoulderX = player.x;
+    const shoulderY = player.y - 114;
+    return {
+        x: shoulderX + Math.cos(player.armAngle) * 45,
+        y: shoulderY + Math.sin(player.armAngle) * 45
+    };
+}
+
 function resetBallToHand() {
-    ball.x = player.x + 15;
-    ball.y = player.y - 25;
-    ball.vx = 0;
-    ball.vy = 0;
-    ball.angle = 0;
-    ball.spinSpeed = 0;
+    player.armAngle = Math.PI / 2;
+    let hand = getHandPosition();
+    ball.x = hand.x;
+    ball.y = hand.y + 15;
+    ball.vx = 0; ball.vy = 0; ball.angle = 0; ball.spinSpeed = 0;
     hasScoredThisShot = false;
     ballState = 'idle';
+
+    const contestRoll = Math.random();
+    const ind = document.getElementById('contest-indicator');
+    if (contestRoll < 0.45) {
+        defenseContestLevel = 'Open';
+        ind.innerText = "OPEN SHOT";
+        ind.style.color = "#00ffcc";
+        currentMeterSpeed = baseMeterSpeed + ((hoop.x1 - player.x) / 220);
+    } else if (contestRoll < 0.8) {
+        defenseContestLevel = 'Contested';
+        ind.innerText = "CONTESTED";
+        ind.style.color = "#ffea00";
+        currentMeterSpeed = (baseMeterSpeed * 1.2) + ((hoop.x1 - player.x) / 220);
+    } else {
+        defenseContestLevel = 'Smothered';
+        ind.innerText = "SMOTHERED!";
+        ind.style.color = "#ff3b30";
+        currentMeterSpeed = (baseMeterSpeed * 1.35) + ((hoop.x1 - player.x) / 220);
+    }
 }
 
 function launchBallPhysics() {
     ballState = 'flying';
-    
-    // Lock Ghost Meter parameters for visual retention systems
     ghostMeterVal = shotMeterVal;
     ghostMeterAlpha = 1.0;
+    player.followThroughTimer = 60;
 
-    // Evaluate shot release timing window definitions
+    // Evaluate Quality Metrics
     if (shotMeterVal >= METER_ZONES.perfectStart && shotMeterVal <= METER_ZONES.perfectEnd) {
         currentReleaseQuality = 'perfect';
+        screenFlashColor = 'rgba(0, 255, 204,'; 
+        screenFlashAlpha = 0.45; 
+        rimBurstRadius = 1; 
     } else if (shotMeterVal >= METER_ZONES.goodStart && shotMeterVal <= METER_ZONES.goodEnd) {
         currentReleaseQuality = 'good';
     } else {
         currentReleaseQuality = 'bad';
+        // Fire Red warning pulse flash for terrible misses
+        if (shotMeterVal < 52 || shotMeterVal > METER_ZONES.goodEnd) {
+            screenFlashColor = 'rgba(255, 59, 48,';
+            screenFlashAlpha = 0.35;
+        }
     }
 
     showBannerFeedback(currentReleaseQuality);
 
-    // Ball Vector Resolution via targeted kinematics formulas
-    let airTravelFrames = 52; 
+    let airTravelFrames = 54; 
     let baseTargetX = (hoop.x1 + hoop.x2) / 2; 
     
     if (currentReleaseQuality === 'good') {
-        baseTargetX += (Math.random() - 0.5) * 14; 
+        baseTargetX += (Math.random() - 0.5) * 8; 
     } else if (currentReleaseQuality === 'bad') {
-        baseTargetX += shotMeterVal < METER_ZONES.goodStart ? -65 : 45;
+        if (shotMeterVal < 52) {
+            // NEW CRITICAL EARLY PUNISHMENT: Total hard brick/drop short left
+            baseTargetX = player.x + 80; 
+            airTravelFrames = 42; // Fast ugly arc drop
+        } else if (shotMeterVal > METER_ZONES.goodEnd) {
+            // Late Release Drop Short Right
+            baseTargetX = hoop.x1 - 65; 
+        } else {
+            // Subtle Early Miss (52 - 59) Clank off front iron rim
+            baseTargetX = hoop.x1 - 10;
+        }
     }
 
-    // Kinematic translation calculations
+    let hand = getHandPosition();
+    ball.x = hand.x; ball.y = hand.y;
     ball.vx = (baseTargetX - ball.x) / airTravelFrames;
     ball.vy = ((hoop.y - ball.y) - (0.5 * ball.gravity * airTravelFrames * airTravelFrames)) / airTravelFrames;
-    
-    // Set dynamic visual spin speed based on forward velocity metrics
-    ball.spinSpeed = ball.vx * 0.05;
+    ball.spinSpeed = ball.vx * 0.065;
 }
 
 function showBannerFeedback(quality) {
     const el = document.getElementById('feedback');
     el.className = quality;
-    
     if (quality === 'perfect') {
-        el.innerText = "Excellent Release!";
+        el.innerText = "PERFECT GREEN";
     } else if (quality === 'good') {
-        el.innerText = "Good Timing";
+        el.innerText = "GOOD TIMING";
     } else {
-        el.innerText = shotMeterVal < METER_ZONES.goodStart ? "Slightly Early / Airball" : "Late Release / Brick";
+        if (shotMeterVal < 52) {
+            el.innerText = "TOO EARLY (PENALTY)";
+        } else if (shotMeterVal < METER_ZONES.goodStart) {
+            el.innerText = "EARLY RELEASE";
+        } else {
+            el.innerText = "LATE RELEASE (AIRBALL)";
+        }
     }
     
     el.classList.remove('hidden');
     clearTimeout(feedbackTimeout);
-    feedbackTimeout = setTimeout(() => el.classList.add('hidden'), 1200);
+    feedbackTimeout = setTimeout(() => el.classList.add('hidden'), 1100);
 }
 
-// Processing Updates Engine Logic Loop with Delta Time parameters
-function update(dt) {
-    // Decay visual ghost configuration structures
-    if (ghostMeterAlpha > 0) {
-        ghostMeterAlpha -= 0.02 * dt;
-    }
+function drawPillCapsule(x, y, w, h, radius, color) {
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.moveTo(x + radius, y);
+    ctx.lineTo(x + w - radius, y);
+    ctx.quadraticCurveTo(x + w, y, x + w, y + radius);
+    ctx.lineTo(x + w, y + h - radius);
+    ctx.quadraticCurveTo(x + w, y + h, x + w - radius, y + h);
+    ctx.lineTo(x + radius, y + h);
+    ctx.quadraticCurveTo(x, y + h, x, y + h - radius);
+    ctx.lineTo(x, y + radius);
+    ctx.quadraticCurveTo(x, y, x + radius, y);
+    ctx.closePath();
+    ctx.fill();
+}
 
-    // Dynamic recovery algorithm processing for the hoop net meshes
-    if (netYOffset > 0) {
-        netYOffset -= 0.6 * dt;
-        if (netYOffset < 0) netYOffset = 0;
-    }
+function update(dt) {
+    if (!isPlaying) return;
+
+    timeLeft -= (dt * 16.66) / 1000;
+    if (timeLeft <= 0) { timeLeft = 0; endGame(); }
+    document.getElementById('timer-val').innerText = timeLeft.toFixed(1);
+
+    pulseAnimationTimer += 0.08 * dt; 
+    if (ghostMeterAlpha > 0) ghostMeterAlpha -= 0.022 * dt;
+    if (netYOffset > 0) netYOffset = Math.max(0, netYOffset - 0.75 * dt);
+    if (cameraShake > 0) cameraShake = Math.max(0, cameraShake - 0.55 * dt);
+    if (screenFlashAlpha > 0) screenFlashAlpha = Math.max(0, screenFlashAlpha - 0.02 * dt);
+    if (player.followThroughTimer > 0) player.followThroughTimer -= dt;
+    if (rimBurstRadius > 0 && rimBurstRadius < 80) rimBurstRadius += 3.5 * dt;
 
     if (isCharging) {
-        shotMeterVal += meterSpeed * dt;
-        if (shotMeterVal > 100) {
-            shotMeterVal = 100;
-            isCharging = false;
-            launchBallPhysics();
-        }
+        shotMeterVal += currentMeterSpeed * dt;
+        if (shotMeterVal > 100) { shotMeterVal = 100; isCharging = false; launchBallPhysics(); }
+        
+        let progress = shotMeterVal / 100;
+        player.armAngle = (Math.PI / 2) - (progress * Math.PI); 
+        let hand = getHandPosition();
+        ball.x = hand.x; ball.y = hand.y;
+    } else if (ballState === 'flying' && player.followThroughTimer > 0) {
+        player.armAngle = -Math.PI / 3.5; 
+    } else if (ballState === 'idle') {
+        player.armAngle = Math.PI / 2; 
+        let hand = getHandPosition();
+        ball.x = hand.x; ball.y = hand.y + 10;
     }
 
     if (ballState === 'flying') {
-        // Frame independent vector updates
         ball.x += ball.vx * dt;
         ball.y += ball.vy * dt;
         ball.vy += ball.gravity * dt;
         ball.angle += ball.spinSpeed * dt;
 
-        // --- REAL PHYSICS COLLISION ENGINE ---
-        
-        // 1. Backboard Surface Boundary Intersection Check
-        if (ball.x + ball.radius >= hoop.backboardX && ball.x - ball.radius <= hoop.backboardX + 12) {
+        if (currentReleaseQuality === 'perfect' || streak >= 2) {
+            particleTrail.push({x: ball.x, y: ball.y, alpha: 0.85, size: ball.radius * 1.35});
+        }
+
+        // Backboard Collision
+        if (ball.x + ball.radius >= hoop.backboardX && ball.x - ball.radius <= hoop.backboardX + 10) {
             if (ball.y >= hoop.backboardTop && ball.y <= hoop.backboardBottom) {
                 ball.vx = -Math.abs(ball.vx) * ball.bounciness;
                 ball.x = hoop.backboardX - ball.radius;
-                ball.spinSpeed = -ball.spinSpeed * 0.5; // Reverse visual spin on contact
-                playRimSound();
+                ball.spinSpeed = -ball.spinSpeed * 0.4;
+                playRimSound(Math.abs(ball.vx) > 2.5);
             }
         }
 
-        // 2. Front Rim Node Intersection
-        let dxFront = ball.x - hoop.x1;
-        let dyFront = ball.y - hoop.y;
-        let distFront = Math.hypot(dxFront, dyFront);
-        if (distFront < ball.radius + 4) {
-            playRimSound();
-            let nx = dxFront / distFront;
-            let ny = dyFront / distFront;
-            let dotProduct = ball.vx * nx + ball.vy * ny;
-            ball.vx = (ball.vx - 2 * dotProduct * nx) * ball.bounciness;
-            ball.vy = (ball.vy - 2 * dotProduct * ny) * ball.bounciness;
-            ball.x = hoop.x1 + nx * (ball.radius + 5);
-            ball.y = hoop.y + ny * (ball.radius + 5);
-            ball.spinSpeed = (ball.vy - ball.vx) * 0.03; // Randomize rotation vectors dynamically
+        // Front Rim Collision
+        let dxF = ball.x - hoop.x1, dyF = ball.y - hoop.y;
+        let distF = Math.hypot(dxF, dyF);
+        if (distF < ball.radius + 3) {
+            playRimSound(true);
+            let nx = dxF / distF, ny = dyF / distF;
+            let dp = ball.vx * nx + ball.vy * ny;
+            ball.vx = (ball.vx - 2 * dp * nx) * ball.bounciness;
+            ball.vy = (ball.vy - 2 * dp * ny) * ball.bounciness;
+            ball.x = hoop.x1 + nx * (ball.radius + 4);
+            ball.y = hoop.y + ny * (ball.radius + 4);
         }
 
-        // 3. Back Rim Node Intersection Point Collider
-        let dxBack = ball.x - hoop.x2;
-        let dyBack = ball.y - hoop.y;
-        let distBack = Math.hypot(dxBack, dyBack);
-        if (distBack < ball.radius + 4) {
-            playRimSound();
-            let nx = dxBack / distBack;
-            let ny = dyBack / distBack;
-            let dotProduct = ball.vx * nx + ball.vy * ny;
-            ball.vx = (ball.vx - 2 * dotProduct * nx) * ball.bounciness;
-            ball.vy = (ball.vy - 2 * dotProduct * ny) * ball.bounciness;
-            ball.x = hoop.x2 + nx * (ball.radius + 5);
-            ball.y = hoop.y + ny * (ball.radius + 5);
-            ball.spinSpeed = (ball.vy - ball.vx) * 0.03;
+        // Back Rim Collision
+        let dxB = ball.x - hoop.x2, dyB = ball.y - hoop.y;
+        let distB = Math.hypot(dxB, dyB);
+        if (distB < ball.radius + 3) {
+            playRimSound(true);
+            let nx = dxB / distB, ny = dyB / distB;
+            let dp = ball.vx * nx + ball.vy * ny;
+            ball.vx = (ball.vx - 2 * dp * nx) * ball.bounciness;
+            ball.vy = (ball.vy - 2 * dp * ny) * ball.bounciness;
+            ball.x = hoop.x2 + nx * (ball.radius + 4);
+            ball.y = hoop.y + ny * (ball.radius + 4);
         }
 
-        // 4. Scoring Logic Check
+        // Scoring Logic
         if (!hasScoredThisShot && ball.vy > 0 && ball.y >= hoop.y && ball.y <= hoop.y + 15) {
-            if (ball.x > hoop.x1 && ball.x < hoop.x2) {
+            if (ball.x > hoop.x1 + 4 && ball.x < hoop.x2 - 4) {
                 hasScoredThisShot = true;
-                netYOffset = 14; // Trigger mesh simulation displacement parameters
+                netYOffset = 20; 
                 playSwishSound();
                 
                 streak++;
                 document.getElementById('streak-val').innerText = streak;
-                if (streak >= 2) {
-                    document.getElementById('streak-wrap').style.visibility = 'visible';
-                }
+                if (streak >= 2) document.getElementById('streak-wrap').classList.remove('hidden');
 
-                let streakBonus = Math.floor(streak / 3); // Accumulate baseline tier multiplier points
-                let pointsEarned = 2;
-                let textOut = `+2 Points`;
-                let fillCol = "#ffcc00";
-
-                if (currentReleaseQuality === 'perfect') {
-                    pointsEarned = 3;
-                    textOut = "+3 Green Release!";
-                    fillCol = "#00ffcc";
-                }
-
-                if (streakBonus > 0) {
-                    pointsEarned += streakBonus;
-                    textOut += ` (Streak +${streakBonus})`;
-                }
-
-                score += pointsEarned;
+                let multiplier = defenseContestLevel === 'Smothered' ? 2 : 1;
+                let pts = currentReleaseQuality === 'perfect' ? 3 : 2;
+                score += (pts * multiplier) + Math.floor(streak / 2);
                 document.getElementById('score-val').innerText = score;
-                createFloatScore(textOut, (hoop.x1 + hoop.x2)/2, hoop.y - 20, fillCol);
             }
         }
 
-        // Automatically clean up out-of-bounds positioning instances
-        if (ball.y > canvas.height + 40 || ball.x > canvas.width + 40 || ball.x < -40) {
+        if (ball.y > canvas.height + 50 || ball.x > canvas.width + 50 || ball.x < -50) {
             if (!hasScoredThisShot) {
-                // Wipe streak states clean instantly upon miss event execution
                 streak = 0;
                 document.getElementById('streak-val').innerText = streak;
-                document.getElementById('streak-wrap').style.visibility = 'hidden';
+                document.getElementById('streak-wrap').classList.add('hidden');
             }
-            
             ballState = 'returning';
-            
-            // Re-allocate player position coordinates randomly to modify floor spatial layout depth
             setTimeout(() => {
-                player.x = 90 + Math.random() * 260; // Safely reposition down the lane
+                player.x = 120 + Math.random() * 340; 
                 resetBallToHand();
-            }, 400);
+            }, 200);
         }
     }
 
-    // Process active score popup array lifecycle
-    for (let i = floatScores.length - 1; i >= 0; i--) {
-        floatScores[i].y -= 0.8 * dt;
-        floatScores[i].life -= dt;
-        floatScores[i].alpha = floatScores[i].life / 50;
-        if (floatScores[i].life <= 0) floatScores.splice(i, 1);
+    for (let i = particleTrail.length - 1; i >= 0; i--) {
+        let p = particleTrail[i];
+        p.alpha -= 0.045 * dt;
+        p.size -= 0.22 * dt;
+        if (p.alpha <= 0) particleTrail.splice(i, 1);
     }
 }
 
-// Rendering Execution Core Canvas Draw Engine
 function draw() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
+    
+    ctx.save();
+    if (cameraShake > 0) {
+        ctx.translate((Math.random() - 0.5) * cameraShake, (Math.random() - 0.5) * cameraShake);
+    }
 
-    // --- DRAW BASKETBALL COURT ---
-    ctx.fillStyle = '#cc7a3a'; 
-    ctx.fillRect(0, courtFloorY, canvas.width, canvas.height - courtFloorY);
-    ctx.fillStyle = '#a65b24'; 
-    ctx.fillRect(0, courtFloorY, canvas.width, 10);
+    // --- HIGH CONTRAST BACKGROUND STADIUM STYLING ---
+    let bgGrad = ctx.createRadialGradient(canvas.width/2, 220, 50, canvas.width/2, 200, 750);
+    bgGrad.addColorStop(0, '#1c1c2a');
+    bgGrad.addColorStop(0.5, '#0c0c14');
+    bgGrad.addColorStop(1, '#040406');
+    ctx.fillStyle = bgGrad;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    // Painted Key Area
-    ctx.strokeStyle = 'rgba(255,255,255,0.35)';
+    // Dynamic Stadium Neon Ring Lines
+    ctx.strokeStyle = 'rgba(255, 106, 0, 0.04)';
     ctx.lineWidth = 4;
-    ctx.strokeRect(520, courtFloorY, 330, canvas.height - courtFloorY);
+    ctx.beginPath(); ctx.arc(canvas.width/2, 180, 280, 0, Math.PI, true); ctx.stroke();
+    ctx.beginPath(); ctx.arc(canvas.width/2, 180, 360, 0, Math.PI, true); ctx.stroke();
 
-    // Structural Backboard Systems Support Framing
-    ctx.fillStyle = '#262626';
-    ctx.fillRect(735, hoop.backboardTop + 40, 16, courtFloorY - hoop.backboardTop - 40); 
-    ctx.fillStyle = '#ffffff';
-    ctx.fillRect(hoop.backboardX, hoop.backboardTop, 12, hoop.backboardBottom - hoop.backboardTop); 
-    ctx.strokeStyle = '#e64a19';
+    // --- HIGH GLOSS HARDWOOD FLOOR ---
+    let floorGrad = ctx.createLinearGradient(0, courtFloorY, 0, canvas.height);
+    floorGrad.addColorStop(0, '#c38249');
+    floorGrad.addColorStop(0.3, '#ad6f38');
+    floorGrad.addColorStop(1, '#663b18');
+    ctx.fillStyle = floorGrad;
+    ctx.fillRect(0, courtFloorY, canvas.width, canvas.height - courtFloorY);
+    
+    // Fine Detailed Wood Board Planks
+    ctx.strokeStyle = 'rgba(0,0,0,0.12)';
+    ctx.lineWidth = 1.5;
+    for (let i = courtFloorY; i < canvas.height; i += 14) {
+        ctx.beginPath(); ctx.moveTo(0, i); ctx.lineTo(canvas.width, i); ctx.stroke();
+    }
+    
+    // Court Key Lines Coating
+    ctx.fillStyle = 'rgba(255,255,255,0.03)';
+    ctx.fillRect(0, courtFloorY, canvas.width, 12);
+    ctx.strokeStyle = 'rgba(255,255,255,0.18)';
     ctx.lineWidth = 3;
-    ctx.strokeRect(hoop.backboardX, hoop.backboardTop, 12, hoop.backboardBottom - hoop.backboardTop);
+    ctx.strokeRect(520, courtFloorY, 400, canvas.height); 
 
-    // Semi-Transparent Net Mesh Layout Lines (Animated via displacement mapping variables)
-    ctx.strokeStyle = 'rgba(240, 240, 240, 0.75)';
-    ctx.lineWidth = 2.5;
+    // Floor Base Layer Ambient Shadows
+    ctx.fillStyle = 'rgba(0,0,0,0.5)';
     ctx.beginPath();
-    ctx.moveTo(hoop.x1, hoop.y);
-    ctx.lineTo(hoop.x1 + 4, hoop.y + 22 + netYOffset);
-    ctx.lineTo(hoop.x2 - 4, hoop.y + 22 + netYOffset);
-    ctx.lineTo(hoop.x2, hoop.y);
-    ctx.stroke();
-
-    // Rim Lines & Nets Overlay
-    ctx.strokeStyle = '#ff4500';
-    ctx.lineWidth = 5;
-    ctx.beginPath();
-    ctx.moveTo(hoop.x1, hoop.y);
-    ctx.lineTo(hoop.x2, hoop.y);
-    ctx.stroke();
-
-    // --- DRAW PLAYER PROXY ---
-    ctx.fillStyle = '#2a6fdb';
-    ctx.beginPath();
-    ctx.arc(player.x, player.y, player.radius, 0, Math.PI * 2);
+    ctx.ellipse(player.x, courtFloorY + 8, 30, 6, 0, 0, Math.PI * 2);
     ctx.fill();
-    ctx.fillStyle = '#ffffff';
-    ctx.font = 'bold 13px sans-serif';
-    ctx.fillText("88", player.x - 7, player.y + 5);
 
-    // --- DRAW BASKETBALL WITH VISUAL SPIN SEAMS ---
+    if (ballState === 'flying') {
+        let height = courtFloorY - ball.y;
+        let shadowScale = Math.max(0.1, 1 - (height / 380));
+        let shadowAlpha = Math.max(0, 0.48 - (height / 750));
+        ctx.fillStyle = `rgba(0,0,0,${shadowAlpha})`;
+        ctx.beginPath();
+        ctx.ellipse(ball.x, courtFloorY + 8, ball.radius * 1.6 * shadowScale, ball.radius * 0.65 * shadowScale, 0, 0, Math.PI*2);
+        ctx.fill();
+    }
+
+    // --- HOOP SYSTEM INTERACTIVE MODEL ---
+    ctx.fillStyle = '#111116'; 
+    ctx.fillRect(hoop.backboardX + 12, hoop.backboardTop + 50, 18, courtFloorY - hoop.backboardTop - 50); 
+    
+    // Clear Glass Plate Backboard
+    ctx.fillStyle = 'rgba(210, 235, 255, 0.18)'; 
+    ctx.fillRect(hoop.backboardX, hoop.backboardTop, 12, hoop.backboardBottom - hoop.backboardTop); 
+    ctx.strokeStyle = '#ffffff'; 
+    ctx.lineWidth = 2.5;
+    ctx.strokeRect(hoop.backboardX, hoop.backboardTop, 12, hoop.backboardBottom - hoop.backboardTop);
+    ctx.strokeStyle = '#ff6a00'; 
+    ctx.strokeRect(hoop.backboardX, hoop.y - 25, 12, 35); 
+
+    // Soft Mesh Fabric Net
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.85)';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(hoop.x1, hoop.y);
+    ctx.lineTo(hoop.x1 + 6, hoop.y + 24 + netYOffset);
+    ctx.lineTo(hoop.x2 - 6, hoop.y + 24 + netYOffset);
+    ctx.lineTo(hoop.x2, hoop.y);
+    ctx.stroke();
+
+    // Heavy Metal Rim Structure
+    ctx.strokeStyle = '#ff4500';
+    ctx.lineWidth = 6;
+    ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.moveTo(hoop.x1, hoop.y); ctx.lineTo(hoop.x2, hoop.y); ctx.stroke();
+
+    // Green Release Rim Radial Shockwave
+    if (rimBurstRadius > 0 && rimBurstRadius < 80) {
+        ctx.strokeStyle = `rgba(0, 255, 204, ${1 - (rimBurstRadius / 80)})`;
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.arc((hoop.x1 + hoop.x2)/2, hoop.y, rimBurstRadius, 0, Math.PI * 2);
+        ctx.stroke();
+    }
+
+    // --- SOLID ABSTRACT PLAYER GEOMETRY ---
+    const shoulderX = player.x;
+    const shoulderY = player.y - 114;
+    
+    ctx.fillStyle = '#121216';
+    ctx.fillRect(player.x - 9, player.y - 82, 18, 82); 
+    ctx.fillStyle = '#ff6a00'; 
+    ctx.fillRect(player.x - 14, shoulderY, 28, 52); 
+    
+    ctx.fillStyle = '#8a5a44';
+    ctx.beginPath(); ctx.arc(player.x, shoulderY - 18, 13, 0, Math.PI*2); ctx.fill();
+
+    let hand = getHandPosition();
+    ctx.strokeStyle = '#8a5a44';
+    ctx.lineWidth = 9;
+    ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.moveTo(shoulderX, shoulderY + 5); ctx.lineTo(hand.x, hand.y); ctx.stroke();
+
+    // Fire Tail Processing
+    particleTrail.forEach(p => {
+        ctx.fillStyle = `rgba(255, 90, 0, ${p.alpha})`;
+        ctx.beginPath(); ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2); ctx.fill();
+    });
+
+    // --- MATCH LEATHER BASKETBALL ---
     ctx.save();
     ctx.translate(ball.x, ball.y);
     ctx.rotate(ball.angle);
     
-    // Core structural background circle
-    ctx.fillStyle = '#e65c00';
-    ctx.beginPath();
-    ctx.arc(0, 0, ball.radius, 0, Math.PI * 2);
-    ctx.fill();
+    let ballGrad = ctx.createRadialGradient(-3, -3, 2, 0, 0, ball.radius);
+    ballGrad.addColorStop(0, '#ffa200');
+    ballGrad.addColorStop(1, '#b84600');
+    ctx.fillStyle = ballGrad;
+    ctx.beginPath(); ctx.arc(0, 0, ball.radius, 0, Math.PI * 2); ctx.fill();
     
-    // Structural seam rendering lines
-    ctx.strokeStyle = '#222';
+    ctx.strokeStyle = '#230e00';
     ctx.lineWidth = 1.5;
     ctx.beginPath();
-    // Horizontal cross seam lines
-    ctx.moveTo(-ball.radius, 0);
-    ctx.lineTo(ball.radius, 0);
-    // Vertical cross seam lines
-    ctx.moveTo(0, -ball.radius);
-    ctx.lineTo(0, ball.radius);
-    // Dynamic inner seam curve visuals
+    ctx.moveTo(-ball.radius, 0); ctx.lineTo(ball.radius, 0);
+    ctx.moveTo(0, -ball.radius); ctx.lineTo(0, ball.radius);
     ctx.arc(-ball.radius*0.4, 0, ball.radius * 0.7, -Math.PI/2, Math.PI/2);
     ctx.stroke();
     ctx.restore();
 
-    // --- POPUP LAYER SCORES RENDERING ---
-    floatScores.forEach(s => {
-        ctx.fillStyle = s.color;
-        ctx.font = 'bold 18px sans-serif';
-        ctx.globalAlpha = s.alpha;
-        ctx.fillText(s.text, s.x - 40, s.y);
-        ctx.globalAlpha = 1.0; 
-    });
-
-    // --- DRAW 2K SHOT METER MODULE ---
+    // --- UPGRADED PREMIUM GLOWING SHOT METER BAR ---
     if (isCharging || ghostMeterAlpha > 0) {
-        const mX = player.x - 25;
-        const mY = player.y - 75;
-        const mW = 50;
-        const mH = 9;
+        const mW = 90;               
+        const mH = 12;              
+        const mX = player.x - (mW / 2);
+        const mY = player.y - 185; 
 
         ctx.save();
-        // Fade meter out gracefully if drawing its ghost tracking trace
-        if (!isCharging && ghostMeterAlpha > 0) {
-            ctx.globalAlpha = ghostMeterAlpha;
-        }
+        ctx.globalAlpha = isCharging ? 1.0 : ghostMeterAlpha;
+        
+        ctx.shadowBlur = 12;
+        ctx.shadowColor = 'rgba(0, 0, 0, 0.7)';
 
-        // Background Wrapper Shield
-        ctx.fillStyle = 'rgba(0,0,0,0.7)';
-        ctx.fillRect(mX - 3, mY - 3, mW + 6, mH + 6);
+        // 1. Dark Glass Deep Capsule Backdrop Floor
+        drawPillCapsule(mX - 4, mY - 4, mW + 8, mH + 8, 8, 'rgba(12, 12, 18, 0.95)');
+        ctx.shadowBlur = 0; 
 
-        // Good Frame Windows Color Mapping
-        ctx.fillStyle = '#cc9900';
+        // Visual Early Hand-Check Penalty Danger Box Highlight (0 to 51)
+        let dangerWidth = (51 / 100) * mW;
+        drawPillCapsule(mX, mY, dangerWidth, mH, 3, 'rgba(255, 59, 48, 0.15)');
+
+        // 2. Yellow Timing Window Zone Placement
         let gS = (METER_ZONES.goodStart / 100) * mW;
         let gW = ((METER_ZONES.goodEnd - METER_ZONES.goodStart) / 100) * mW;
-        ctx.fillRect(mX + gS, mY, gW, mH);
+        drawPillCapsule(mX + gS, mY, gW, mH, 3, 'rgba(255, 213, 0, 0.35)');
 
-        // Target Precision Green Point Range Box
-        ctx.fillStyle = '#00ffcc';
+        // 3. Perfect Green Zone 
         let pS = (METER_ZONES.perfectStart / 100) * mW;
         let pW = ((METER_ZONES.perfectEnd - METER_ZONES.perfectStart) / 100) * mW;
-        ctx.fillRect(mX + pS, mY, pW, mH);
+        let dynamicGreenAlpha = 0.55 + Math.sin(pulseAnimationTimer) * 0.25;
+        
+        ctx.save();
+        ctx.shadowBlur = 10;
+        ctx.shadowColor = '#00ffcc';
+        drawPillCapsule(mX + pS, mY, pW, mH, 3, `rgba(0, 255, 204, ${dynamicGreenAlpha})`);
+        ctx.restore();
 
-        // Active/Ghost Moving Indicator Slider Line
+        // 4. Smooth Tracking Micro-Needle & Arrow Indicator
         let displayVal = isCharging ? shotMeterVal : ghostMeterVal;
-        let trackingPositionX = (displayVal / 100) * mW;
-        ctx.fillStyle = isCharging ? '#ffffff' : '#ffea00'; // Make ghost marker a golden/yellow hue
-        ctx.fillRect(mX + trackingPositionX - 1, mY - 3, 3, mH + 6);
+        let currentNeedleX = mX + (displayVal / 100) * mW;
+
+        ctx.save();
+        ctx.shadowBlur = 6;
+        // Turn indicator red if idling inside the immediate hard penalty zone
+        if (displayVal < 52) {
+            ctx.shadowColor = '#ff3b30';
+            ctx.strokeStyle = '#ff3b30';
+            ctx.fillStyle = '#ff3b30';
+        } else {
+            ctx.shadowColor = '#ffffff';
+            ctx.strokeStyle = '#ffffff';
+            ctx.fillStyle = '#ffffff';
+        }
+        
+        // Glowing Center Target Pin Line
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.moveTo(currentNeedleX, mY - 2);
+        ctx.lineTo(currentNeedleX, mY + mH + 2);
+        ctx.stroke();
+
+        // Downward Targeting Pointer Shield Chevron
+        ctx.beginPath();
+        ctx.moveTo(currentNeedleX, mY - 3);
+        ctx.lineTo(currentNeedleX - 5, mY - 9);
+        ctx.lineTo(currentNeedleX + 5, mY - 9);
+        ctx.closePath();
+        ctx.fill();
+        ctx.restore();
         
         ctx.restore();
     }
+
+    // Dynamic Flash Frame Blending
+    if (screenFlashAlpha > 0) {
+        ctx.fillStyle = screenFlashColor + screenFlashAlpha + ')';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+    }
+
+    ctx.restore(); 
 }
 
-// Global Core Main Frame Loop Engine with Delta Time calculations
 let lastTime = 0;
 function gameLoop(timestamp) {
     if (!lastTime) lastTime = timestamp;
-    // Standardize delta updates against a uniform target rate of 60Hz (16.66ms per frame)
     let dt = (timestamp - lastTime) / 16.66;
     lastTime = timestamp;
-
-    // Cap structural maximum jumps to prevent breaking collision paths on tab background idling
-    if (dt > 4) dt = 4;
+    if (dt > 3) dt = 3;
 
     update(dt);
     draw();
     requestAnimationFrame(gameLoop);
 }
 
-// Execute Processing Immediately
 requestAnimationFrame(gameLoop);
 </script>
 
