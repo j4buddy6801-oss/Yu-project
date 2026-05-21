@@ -136,6 +136,20 @@
         .good { color: #ffea00; }
         .bad { color: #ff3b30; }
         .hidden { display: none !important; }
+
+        /* Author Watermark */
+        .watermark {
+            position: absolute;
+            bottom: 15px;
+            right: 20px;
+            font-size: 10px;
+            color: rgba(255, 255, 255, 0.25);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            pointer-events: none;
+            z-index: 5;
+            font-weight: 800;
+        }
     </style>
 </head>
 <body>
@@ -173,6 +187,7 @@
         <button onclick="startGame(event)">Run It Back</button>
     </div>
 
+    <div class="watermark">made by Alphonsus Yu</div>
     <canvas id="gameCanvas" width="900" height="550"></canvas>
 </div>
 
