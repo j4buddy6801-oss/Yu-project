@@ -2,12 +2,13 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Pro Hoops: Premium Arena Edition</title>
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,800;1,900&display=swap" rel="stylesheet">
     <style>
         body {
             margin: 0;
+            padding: 0;
             background-color: #060608;
             color: #fff;
             font-family: 'Montserrat', sans-serif;
@@ -15,53 +16,57 @@
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            min-height: 100vh;
+            width: 100vw;
+            height: 100vh;
             overflow: hidden;
             user-select: none;
             touch-action: none;
+            -webkit-touch-callout: none;
         }
         #game-container {
-            position: relative;
-            box-shadow: 0 25px 70px rgba(0,0,0,0.95), 0 0 30px rgba(255, 115, 0, 0.15);
-            border-radius: 16px;
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%;
+            height: 100%;
             overflow: hidden;
             background: #09090d;
-            max-width: 100vw;
             touch-action: none;
         }
         canvas {
             display: block;
-            max-width: 100%;
-            height: auto;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
         }
         
-        /* Premium Broadcast HUD Layout */
+        /* Premium Broadcast HUD Layout - SafeArea adjusted for modern phones */
         .ui-layer {
             position: absolute;
-            top: 20px;
-            left: 20px;
-            right: 20px;
+            top: env(safe-area-inset-top, 20px);
+            left: env(safe-area-inset-left, 20px);
+            right: env(safe-area-inset-right, 20px);
             display: flex;
             justify-content: space-between;
             pointer-events: none;
+            z-index: 10;
         }
         .score-bug {
             background: linear-gradient(135deg, rgba(16, 16, 24, 0.95) 0%, rgba(26, 26, 36, 0.9) 100%);
             border-left: 6px solid #ff6a00;
-            padding: 10px 24px;
+            padding: 8px 16px;
             border-radius: 6px;
             display: flex;
             flex-direction: column;
             box-shadow: 0 10px 25px rgba(0,0,0,0.6);
         }
         .score-label { font-size: 11px; color: #aaa; text-transform: uppercase; letter-spacing: 1.5px; font-weight: 800; }
-        .score-number { font-size: 30px; color: #fff; text-shadow: 0 3px 6px rgba(0,0,0,0.4); font-weight: 900; }
+        .score-number { font-size: clamp(20px, 6vw, 30px); color: #fff; text-shadow: 0 3px 6px rgba(0,0,0,0.4); font-weight: 900; }
         .streak-text { font-size: 12px; color: #00ffcc; margin-top: -2px; text-shadow: 0 0 10px rgba(0,255,204,0.5); font-weight: 900; }
         
         .timer-bug {
             background: linear-gradient(135deg, rgba(16, 16, 24, 0.95) 0%, rgba(26, 26, 36, 0.9) 100%);
             border-right: 6px solid #ff3b30;
-            padding: 10px 24px;
+            padding: 8px 16px;
             border-radius: 6px;
             text-align: right;
             box-shadow: 0 10px 25px rgba(0,0,0,0.6);
@@ -69,12 +74,12 @@
 
         #contest-indicator {
             position: absolute;
-            top: 25px;
+            top: env(safe-area-inset-top, 25px);
             left: 50%;
             transform: translateX(-50%);
             padding: 6px 16px;
             border-radius: 30px;
-            font-size: 12px;
+            font-size: clamp(10px, 3vw, 12px);
             text-transform: uppercase;
             letter-spacing: 2px;
             font-weight: 900;
@@ -82,6 +87,7 @@
             box-shadow: 0 4px 12px rgba(0,0,0,0.3);
             pointer-events: none;
             transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            white-space: nowrap;
         }
         
         .screen-overlay {
@@ -92,16 +98,17 @@
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            z-index: 10;
+            z-index: 20;
             backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
             text-align: center;
             padding: 25px;
             box-sizing: border-box;
         }
         
         button {
-            padding: 18px 50px;
-            font-size: 20px;
+            padding: 16px 40px;
+            font-size: clamp(16px, 5vw, 20px);
             font-family: 'Montserrat', sans-serif;
             font-weight: 900;
             background: linear-gradient(135deg, #ff6a00, #ff2300);
@@ -121,27 +128,27 @@
         
         #feedback {
             position: absolute;
-            bottom: 125px;
+            bottom: max(env(safe-area-inset-bottom, 20px) + 80px, 15%);
             width: 100%;
             text-align: center;
-            font-size: 36px;
+            font-size: clamp(24px, 6vw, 36px);
             text-transform: uppercase;
             letter-spacing: 5px;
             text-shadow: 0 4px 20px rgba(0,0,0,1);
             pointer-events: none;
             transition: all 0.11s cubic-bezier(0.175, 0.885, 0.32, 1.2);
             font-style: italic;
+            z-index: 10;
         }
         .perfect { color: #00ffcc; transform: scale(1.15); text-shadow: 0 0 25px rgba(0,255,204,0.7), 0 4px 15px rgba(0,0,0,1); }
         .good { color: #ffea00; }
         .bad { color: #ff3b30; }
         .hidden { display: none !important; }
 
-        /* Author Watermark */
         .watermark {
             position: absolute;
-            bottom: 15px;
-            right: 20px;
+            bottom: env(safe-area-inset-bottom, 15px);
+            right: env(safe-area-inset-right, 20px);
             font-size: 10px;
             color: rgba(255, 255, 255, 0.25);
             text-transform: uppercase;
@@ -171,9 +178,9 @@
     <div id="feedback" class="hidden"></div>
 
     <div id="start-screen" class="screen-overlay">
-        <h1 style="color: #fff; margin: 0; font-size: 46px; letter-spacing: 2px; text-shadow: 0 0 40px rgba(255,106,0,0.45);">PRO HOOPS</h1>
-        <h2 style="color: #ff6a00; margin-top: 5px; margin-bottom: 35px; font-size: 20px; letter-spacing: 8px;">ARENA SIMULATOR</h2>
-        <p style="margin-bottom: 35px; color: #bbb; font-size: 15px; font-family: sans-serif; line-height: 1.6; max-width: 440px;">
+        <h1 style="color: #fff; margin: 0; font-size: clamp(32px, 10vw, 46px); letter-spacing: 2px; text-shadow: 0 0 40px rgba(255,106,0,0.45);">PRO HOOPS</h1>
+        <h2 style="color: #ff6a00; margin-top: 5px; margin-bottom: 35px; font-size: clamp(14px, 4vw, 20px); letter-spacing: 8px;">ARENA SIMULATOR</h2>
+        <p style="margin-bottom: 35px; color: #bbb; font-size: clamp(13px, 4vw, 15px); font-family: sans-serif; line-height: 1.6; max-width: 440px;">
             Tap & Hold anywhere on screen (or press Spacebar) to lock timing. Let go to shoot.
             <br><br>
             <span style="color: #ff3b30; font-weight: bold;">CRITICAL UPDATE:</span> Releasing **too early** (below 52) or **too late** (above 83) will completely wreck your trajectory. Find the green center sweet spot!
@@ -182,13 +189,13 @@
     </div>
 
     <div id="game-over-screen" class="screen-overlay hidden">
-        <h1 style="color: #ff3b30; margin-bottom: 0; font-size: 52px; letter-spacing: 1px;">FINAL BUZZER</h1>
-        <p style="margin-top: 10px; margin-bottom: 40px; font-size: 26px; color: #ddd;">Total Score: <span id="final-score" style="color:#ff6a00; font-weight:900;">0</span></p>
+        <h1 style="color: #ff3b30; margin-bottom: 0; font-size: clamp(38px, 12vw, 52px); letter-spacing: 1px;">FINAL BUZZER</h1>
+        <p style="margin-top: 10px; margin-bottom: 40px; font-size: clamp(20px, 6vw, 26px); color: #ddd;">Total Score: <span id="final-score" style="color:#ff6a00; font-weight:900;">0</span></p>
         <button onclick="startGame(event)">Run It Back</button>
     </div>
 
     <div class="watermark">made by Alphonsus Yu</div>
-    <canvas id="gameCanvas" width="900" height="550"></canvas>
+    <canvas id="gameCanvas"></canvas>
 </div>
 
 <script>
@@ -218,37 +225,56 @@ let ghostMeterAlpha = 0;
 let netYOffset = 0;
 let cameraShake = 0;
 let screenFlashAlpha = 0;
-let screenFlashColor = 'rgba(0, 255, 204,'; // Dynamic tone swapper for green vs red hits
+let screenFlashColor = 'rgba(0, 255, 204,'; 
 let particleTrail = [];
 let rimBurstRadius = 0; 
 let pulseAnimationTimer = 0; 
 
-// Court Coordinates Map
-const courtFloorY = 465;
-const hoop = { 
-    x1: 725, x2: 770, y: 245, 
-    backboardX: 775, backboardTop: 145, backboardBottom: 275
-};
+// --- RESPONSIVE LAYOUT ENGINE ---
+let courtFloorY = 465;
+let hoop = { x1: 0, x2: 0, y: 0, backboardX: 0, backboardTop: 0, backboardBottom: 0 };
+let player = { x: 0, y: 0, armAngle: Math.PI / 2, followThroughTimer: 0 };
+let ball = { x: 0, y: 0, radius: 12, vx: 0, vy: 0, gravity: 0.46, bounciness: 0.54, angle: 0, spinSpeed: 0 };
 
-const player = { 
-    x: 180, 
-    y: courtFloorY,
-    armAngle: Math.PI / 2, 
-    followThroughTimer: 0
-};
+function resizeCanvas() {
+    // Fill exact logical pixels to fit the dynamic screen securely
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
 
-const ball = { 
-    x: 0, y: 0, radius: 12, vx: 0, vy: 0, 
-    gravity: 0.46, bounciness: 0.54, angle: 0, spinSpeed: 0 
-};
+    // Adapt layout verticality (keep floor anchored near the bottom)
+    courtFloorY = canvas.height * 0.82;
+
+    // Adapt horizontal spacing based on device width
+    let rightPadding = Math.max(30, canvas.width * 0.08);
+    hoop.x2 = canvas.width - rightPadding;
+    hoop.x1 = hoop.x2 - 45; // Fixed physical hoop rim width
+    
+    // Scale hoop height offset so it looks correct on both tall phones and wide monitors
+    let hoopHeightOffset = Math.min(260, canvas.height * 0.42);
+    hoop.y = courtFloorY - hoopHeightOffset;
+    
+    hoop.backboardX = hoop.x2 + 5;
+    hoop.backboardTop = hoop.y - 100;
+    hoop.backboardBottom = hoop.y + 30;
+
+    player.y = courtFloorY;
+
+    // Gently reposition player dynamically if screen resizes mid-session
+    if (ballState === 'idle') {
+        if (!isPlaying) {
+            player.x = canvas.width * 0.25;
+        } else {
+            if (player.x > canvas.width * 0.6) player.x = canvas.width * 0.3;
+        }
+        resetBallToHand();
+    }
+}
+window.addEventListener('resize', resizeCanvas);
+resizeCanvas(); // Initialize coords instantly
+
 
 // Tightened Operational Windows
-const METER_ZONES = { 
-    perfectStart: 71, 
-    perfectEnd: 79,  
-    goodStart: 60, 
-    goodEnd: 83      
-};
+const METER_ZONES = { perfectStart: 71, perfectEnd: 79, goodStart: 60, goodEnd: 83 };
 let feedbackTimeout;
 
 // Audio Node Builders
@@ -316,7 +342,9 @@ function startGame(e) {
     score = 0; streak = 0; timeLeft = 30.0;
     isPlaying = true; ballState = 'idle'; isCharging = false;
     ghostMeterAlpha = 0; netYOffset = 0; cameraShake = 0; particleTrail = []; rimBurstRadius = 0;
-    player.x = 225;
+    
+    // Set initial player layout based on dynamic screen size
+    player.x = canvas.width * 0.25; 
     
     document.getElementById('score-val').innerText = score;
     document.getElementById('streak-val').innerText = streak;
@@ -354,21 +382,25 @@ function resetBallToHand() {
 
     const contestRoll = Math.random();
     const ind = document.getElementById('contest-indicator');
+    
+    // Scale difficulty dynamically based on logical screen width so portrait isn't too easy
+    let distRatio = (hoop.x1 - player.x) / canvas.width;
+    
     if (contestRoll < 0.45) {
         defenseContestLevel = 'Open';
         ind.innerText = "OPEN SHOT";
         ind.style.color = "#00ffcc";
-        currentMeterSpeed = baseMeterSpeed + ((hoop.x1 - player.x) / 220);
+        currentMeterSpeed = baseMeterSpeed + (distRatio * 4.0);
     } else if (contestRoll < 0.8) {
         defenseContestLevel = 'Contested';
         ind.innerText = "CONTESTED";
         ind.style.color = "#ffea00";
-        currentMeterSpeed = (baseMeterSpeed * 1.2) + ((hoop.x1 - player.x) / 220);
+        currentMeterSpeed = (baseMeterSpeed * 1.2) + (distRatio * 4.0);
     } else {
         defenseContestLevel = 'Smothered';
         ind.innerText = "SMOTHERED!";
         ind.style.color = "#ff3b30";
-        currentMeterSpeed = (baseMeterSpeed * 1.35) + ((hoop.x1 - player.x) / 220);
+        currentMeterSpeed = (baseMeterSpeed * 1.35) + (distRatio * 4.0);
     }
 }
 
@@ -378,7 +410,6 @@ function launchBallPhysics() {
     ghostMeterAlpha = 1.0;
     player.followThroughTimer = 60;
 
-    // Evaluate Quality Metrics
     if (shotMeterVal >= METER_ZONES.perfectStart && shotMeterVal <= METER_ZONES.perfectEnd) {
         currentReleaseQuality = 'perfect';
         screenFlashColor = 'rgba(0, 255, 204,'; 
@@ -388,7 +419,6 @@ function launchBallPhysics() {
         currentReleaseQuality = 'good';
     } else {
         currentReleaseQuality = 'bad';
-        // Fire Red warning pulse flash for terrible misses
         if (shotMeterVal < 52 || shotMeterVal > METER_ZONES.goodEnd) {
             screenFlashColor = 'rgba(255, 59, 48,';
             screenFlashAlpha = 0.35;
@@ -399,19 +429,18 @@ function launchBallPhysics() {
 
     let airTravelFrames = 54; 
     let baseTargetX = (hoop.x1 + hoop.x2) / 2; 
+    let distance = hoop.x1 - player.x;
     
     if (currentReleaseQuality === 'good') {
         baseTargetX += (Math.random() - 0.5) * 8; 
     } else if (currentReleaseQuality === 'bad') {
         if (shotMeterVal < 52) {
-            // NEW CRITICAL EARLY PUNISHMENT: Total hard brick/drop short left
-            baseTargetX = player.x + 80; 
-            airTravelFrames = 42; // Fast ugly arc drop
+            // Early Drop Penalty relative to responsive distance
+            baseTargetX = player.x + (distance * 0.2); 
+            airTravelFrames = 42; 
         } else if (shotMeterVal > METER_ZONES.goodEnd) {
-            // Late Release Drop Short Right
-            baseTargetX = hoop.x1 - 65; 
+            baseTargetX = hoop.x1 - (distance * 0.15); 
         } else {
-            // Subtle Early Miss (52 - 59) Clank off front iron rim
             baseTargetX = hoop.x1 - 10;
         }
     }
@@ -419,6 +448,7 @@ function launchBallPhysics() {
     let hand = getHandPosition();
     ball.x = hand.x; ball.y = hand.y;
     ball.vx = (baseTargetX - ball.x) / airTravelFrames;
+    // Mathematically perfect dynamic arc tracking
     ball.vy = ((hoop.y - ball.y) - (0.5 * ball.gravity * airTravelFrames * airTravelFrames)) / airTravelFrames;
     ball.spinSpeed = ball.vx * 0.065;
 }
@@ -564,7 +594,9 @@ function update(dt) {
             }
             ballState = 'returning';
             setTimeout(() => {
-                player.x = 120 + Math.random() * 340; 
+                let minX = canvas.width * 0.1;
+                let maxX = canvas.width * 0.45;
+                player.x = minX + Math.random() * (maxX - minX); 
                 resetBallToHand();
             }, 200);
         }
@@ -587,18 +619,18 @@ function draw() {
     }
 
     // --- HIGH CONTRAST BACKGROUND STADIUM STYLING ---
-    let bgGrad = ctx.createRadialGradient(canvas.width/2, 220, 50, canvas.width/2, 200, 750);
+    let bgGrad = ctx.createRadialGradient(canvas.width/2, canvas.height*0.4, 50, canvas.width/2, canvas.height*0.35, Math.max(canvas.width, canvas.height));
     bgGrad.addColorStop(0, '#1c1c2a');
     bgGrad.addColorStop(0.5, '#0c0c14');
     bgGrad.addColorStop(1, '#040406');
     ctx.fillStyle = bgGrad;
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    // Dynamic Stadium Neon Ring Lines
+    // Dynamic Stadium Neon Ring Lines relative to device center
     ctx.strokeStyle = 'rgba(255, 106, 0, 0.04)';
     ctx.lineWidth = 4;
-    ctx.beginPath(); ctx.arc(canvas.width/2, 180, 280, 0, Math.PI, true); ctx.stroke();
-    ctx.beginPath(); ctx.arc(canvas.width/2, 180, 360, 0, Math.PI, true); ctx.stroke();
+    ctx.beginPath(); ctx.arc(canvas.width/2, canvas.height*0.35, canvas.width*0.35, 0, Math.PI, true); ctx.stroke();
+    ctx.beginPath(); ctx.arc(canvas.width/2, canvas.height*0.35, canvas.width*0.45, 0, Math.PI, true); ctx.stroke();
 
     // --- HIGH GLOSS HARDWOOD FLOOR ---
     let floorGrad = ctx.createLinearGradient(0, courtFloorY, 0, canvas.height);
@@ -615,12 +647,12 @@ function draw() {
         ctx.beginPath(); ctx.moveTo(0, i); ctx.lineTo(canvas.width, i); ctx.stroke();
     }
     
-    // Court Key Lines Coating
+    // Court Key Lines Coating scaled to window
     ctx.fillStyle = 'rgba(255,255,255,0.03)';
     ctx.fillRect(0, courtFloorY, canvas.width, 12);
     ctx.strokeStyle = 'rgba(255,255,255,0.18)';
     ctx.lineWidth = 3;
-    ctx.strokeRect(520, courtFloorY, 400, canvas.height); 
+    ctx.strokeRect(canvas.width * 0.55, courtFloorY, canvas.width * 0.45, canvas.height); 
 
     // Floor Base Layer Ambient Shadows
     ctx.fillStyle = 'rgba(0,0,0,0.5)';
@@ -763,7 +795,6 @@ function draw() {
 
         ctx.save();
         ctx.shadowBlur = 6;
-        // Turn indicator red if idling inside the immediate hard penalty zone
         if (displayVal < 52) {
             ctx.shadowColor = '#ff3b30';
             ctx.strokeStyle = '#ff3b30';
